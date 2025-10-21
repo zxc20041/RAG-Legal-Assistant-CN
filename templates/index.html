@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>法律小助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-button {
+            background-color: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background-color 0.3s;
+        }
+
+        .header-button:hover {
+            background-color: rgba(255,255,255,0.3);
+        }
+
+        .chat-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .user-message {
+            background-color: #e3f2fd;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .bot-message {
+            background-color: #f1f1f1;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+
+        .system-message {
+            background-color: #fff3cd;
+            align-self: center;
+            border-radius: 8px;
+            max-width: 90%;
+            text-align: center;
+            font-style: italic;
+            color: #856404;
+        }
+
+        .input-container {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #eee;
+            background-color: white;
+        }
+
+        .input-container input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 24px;
+            outline: none;
+            font-size: 1rem;
+        }
+
+        .input-container button {
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 24px;
+            padding: 12px 20px;
+            margin-left: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .input-container button:hover {
+            background-color: #1a252f;
+        }
+
+        .input-container button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            background-color: #f1f1f1;
+            padding: 12px 15px;
+            border-radius: 18px;
+            margin-bottom: 15px;
+            border-bottom-left-radius: 5px;
+            color: #666;
+        }
+
+        .typing-indicator.active {
+            display: block;
+        }
+
+        .typing-dots {
+            display: inline-block;
+        }
+
+        .typing-dots span {
+            animation: typing 1.4s infinite;
+            display: inline-block;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            align-self: center;
+            border-radius: 8px;
+            max-width: 90%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>法律小助手</h1>
+        <div class="header-actions">
+            <button class="header-button" id="clear-history">清空记录</button>
+            <button class="header-button" id="view-history">查看历史</button>
+        </div>
+    </div>
+
+    <div class="chat-container" id="chat-container">
+        <div class="message bot-message">
+            您好！我是法律小助手，请问有什么法律问题需要咨询吗？
+        </div>
+    </div>
+
+    <div class="typing-indicator" id="typing-indicator">
+        <span>法律小助手正在思考</span>
+        <div class="typing-dots">
+            <span>.</span>
+            <span>.</span>
+            <span>.</span>
+        </div>
+    </div>
+
+    <div class="input-container">
+        <input type="text" id="user-input" placeholder="请输入您的法律问题..." autocomplete="off">
+        <button id="send-button">发送</button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const clearHistoryBtn = document.getElementById('clear-history');
+        const viewHistoryBtn = document.getElementById('view-history');
+
+        // 发送消息函数
+        function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // 添加用户消息到聊天界面
+            addMessage(message, 'user');
+
+            // 清空输入框
+            userInput.value = '';
+
+            // 禁用发送按钮
+            sendButton.disabled = true;
+
+            // 显示"正在输入"指示器
+            typingIndicator.classList.add('active');
+
+            // 发送请求到后端
+            fetch('/send_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({message: message})
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 隐藏"正在输入"指示器
+                typingIndicator.classList.remove('active');
+
+                // 处理响应
+                if (data.response) {
+                    if (data.should_exit) {
+                        addMessage(data.response, 'system');
+                        // 可以在这里添加退出逻辑，比如禁用输入框
+                    } else {
+                        addMessage(data.response, 'bot');
+                    }
+                } else if (data.error) {
+                    addMessage('错误: ' + data.error, 'error');
+                }
+
+                // 重新启用发送按钮
+                sendButton.disabled = false;
+
+                // 滚动到最新消息
+                scrollToBottom();
+            })
+            .catch(error => {
+                // 隐藏"正在输入"指示器
+                typingIndicator.classList.remove('active');
+
+                // 显示错误消息
+                addMessage('网络错误: 请检查后端服务是否正常运行', 'error');
+
+                // 重新启用发送按钮
+                sendButton.disabled = false;
+
+                console.error('Error:', error);
+            });
+        }
+
+        // 添加消息到聊天界面
+        function addMessage(text, type) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+
+            switch(type) {
+                case 'user':
+                    messageElement.classList.add('user-message');
+                    break;
+                case 'bot':
+                    messageElement.classList.add('bot-message');
+                    break;
+                case 'system':
+                    messageElement.classList.add('system-message');
+                    break;
+                case 'error':
+                    messageElement.classList.add('error-message');
+                    break;
+            }
+
+            messageElement.textContent = text;
+            chatContainer.appendChild(messageElement);
+            scrollToBottom();
+        }
+
+        // 滚动到最新消息
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // 清空对话历史
+        function clearChatHistory() {
+            fetch('/clear_history', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 清空聊天界面，只保留欢迎消息
+                    chatContainer.innerHTML = '';
+                    addMessage('您好！我是法律小助手，请问有什么法律问题需要咨询吗？', 'bot');
+                    addMessage('对话历史已清空', 'system');
+                }
+            })
+            .catch(error => {
+                console.error('清空历史错误:', error);
+            });
+        }
+
+        // 查看对话历史
+        function viewChatHistory() {
+            fetch('/get_history')
+            .then(response => response.json())
+            .then(data => {
+                console.log('对话历史:', data.history);
+                alert(`当前对话历史长度: ${data.history.length} 条消息`);
+            })
+            .catch(error => {
+                console.error('获取历史错误:', error);
+            });
+        }
+
+        // 发送按钮点击事件
+        sendButton.addEventListener('click', sendMessage);
+
+        // 输入框回车事件
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // 输入框输入事件，启用/禁用发送按钮
+        userInput.addEventListener('input', function() {
+            sendButton.disabled = !userInput.value.trim();
+        });
+
+        // 清空历史按钮
+        clearHistoryBtn.addEventListener('click', clearChatHistory);
+
+        // 查看历史按钮
+        viewHistoryBtn.addEventListener('click', viewChatHistory);
+    });
+</script>
+</body>
+</html>
