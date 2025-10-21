@@ -20,7 +20,8 @@ from flask import Flask, request, jsonify
 
 # 从环境变量中获取DeepSeek的API密钥，如果找不到，则使用后面的默认值。
 # 强烈建议使用环境变量，以避免将密钥直接写入代码。
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "sk-439b1754b1cc4c40be3e64d252031608")
+#填入你自己的API密钥
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "sk-YOUR-API-KEY")
 
 # 初始化Flask Web应用
 app = Flask(__name__)
