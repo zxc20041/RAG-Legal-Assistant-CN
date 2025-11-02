@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>法律小助手</title>
+    <!-- 引入marked.js用于Markdown渲染 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- 引入highlight.js用于代码高亮 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js/styles/github.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js/lib/highlight.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -64,6 +69,34 @@
             background-color: rgba(255,255,255,0.3);
         }
 
+        .settings-panel {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .setting-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .setting-group label {
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        .setting-group select, .setting-group input[type="checkbox"] {
+            padding: 4px 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background-color: white;
+        }
+
         .chat-container {
             flex: 1;
             padding: 20px;
@@ -91,6 +124,11 @@
             background-color: #f1f1f1;
             align-self: flex-start;
             border-bottom-left-radius: 5px;
+        }
+
+        .bot-message.markdown-content {
+            background-color: white;
+            border: 1px solid #e9ecef;
         }
 
         .system-message {
@@ -189,6 +227,74 @@
             max-width: 90%;
             text-align: center;
         }
+
+        .model-info {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .judge-reasoning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px 15px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #856404;
+        }
+
+        /* Markdown样式 */
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .markdown-content p {
+            margin-bottom: 0.5rem;
+        }
+
+        .markdown-content ul, .markdown-content ol {
+            margin-left: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .markdown-content blockquote {
+            border-left: 4px solid #ddd;
+            padding-left: 1rem;
+            margin-left: 0;
+            color: #666;
+        }
+
+        .markdown-content code {
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .markdown-content pre {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 0.5rem 0;
+        }
+
+        .markdown-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0.5rem 0;
+        }
+
+        .markdown-content th, .markdown-content td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .markdown-content th {
+            background-color: #f2f2f2;
+        }
     </style>
 </head>
 <body>
@@ -198,6 +304,29 @@
         <div class="header-actions">
             <button class="header-button" id="clear-history">清空记录</button>
             <button class="header-button" id="view-history">查看历史</button>
+        </div>
+    </div>
+
+    <div class="settings-panel">
+        <div class="setting-group">
+            <label for="model-select">选择模型:</label>
+            <select id="model-select">
+                <option value="deepseek">DeepSeek</option>
+                <option value="zhipu">智谱AI</option>
+                <option value="gpt4o">GPT-4o</option>
+                <option value="claude">Claude</option>
+                <option value="qwen">Qwen</option>
+                <option value="doubao">豆包</option>
+                <option value="grok">Grok</option>
+                <option value="judge">Judge模式</option>
+            </select>
+        </div>
+        <div class="setting-group">
+            <input type="checkbox" id="professional-mode">
+            <label for="professional-mode">专业模式</label>
+        </div>
+        <div class="setting-group" id="current-model-info">
+            <!-- 当前模型信息将在这里显示 -->
         </div>
     </div>
 
@@ -223,6 +352,22 @@
 </div>
 
 <script>
+    // 初始化marked配置
+    marked.setOptions({
+        highlight: function(code, lang) {
+            if (lang && hljs.getLanguage(lang)) {
+                try {
+                    return hljs.highlight(lang, code).value;
+                } catch (err) {
+                    console.error('代码高亮错误:', err);
+                }
+            }
+            return code;
+        },
+        breaks: true,
+        gfm: true
+    });
+
     document.addEventListener('DOMContentLoaded', function() {
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
@@ -230,6 +375,33 @@
         const typingIndicator = document.getElementById('typing-indicator');
         const clearHistoryBtn = document.getElementById('clear-history');
         const viewHistoryBtn = document.getElementById('view-history');
+        const modelSelect = document.getElementById('model-select');
+        const professionalMode = document.getElementById('professional-mode');
+        const currentModelInfo = document.getElementById('current-model-info');
+
+        let currentStreamingMessage = null;
+        let currentFullResponse = '';
+        let currentModelUsed = '';
+
+        // 从session恢复设置
+        fetch('/get_settings')
+            .then(response => response.json())
+            .then(data => {
+                if (data.model) {
+                    modelSelect.value = data.model;
+                }
+                updateModelInfo();
+            })
+            .catch(error => {
+                console.error('获取设置失败:', error);
+            });
+
+        // 更新模型信息显示
+        function updateModelInfo() {
+            const model = modelSelect.value;
+            const isPro = professionalMode.checked;
+            currentModelInfo.textContent = `当前: ${model}${isPro ? ' (专业模式)' : ''}`;
+        }
 
         // 发送消息函数
         function sendMessage() {
@@ -248,49 +420,219 @@
             // 显示"正在输入"指示器
             typingIndicator.classList.add('active');
 
-            // 发送请求到后端
-            fetch('/send_message', {
+            // 重置流式消息状态
+            currentStreamingMessage = null;
+            currentFullResponse = '';
+            currentModelUsed = '';
+
+            // 获取当前设置
+            const selectedModel = modelSelect.value;
+            const isProfessionalMode = professionalMode.checked;
+
+            // 保存模型设置
+            fetch('/set_model', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({message: message})
-            })
-            .then(response => response.json())
-            .then(data => {
-                // 隐藏"正在输入"指示器
-                typingIndicator.classList.remove('active');
-
-                // 处理响应
-                if (data.response) {
-                    if (data.should_exit) {
-                        addMessage(data.response, 'system');
-                        // 可以在这里添加退出逻辑，比如禁用输入框
-                    } else {
-                        addMessage(data.response, 'bot');
-                    }
-                } else if (data.error) {
-                    addMessage('错误: ' + data.error, 'error');
-                }
-
-                // 重新启用发送按钮
-                sendButton.disabled = false;
-
-                // 滚动到最新消息
-                scrollToBottom();
-            })
-            .catch(error => {
-                // 隐藏"正在输入"指示器
-                typingIndicator.classList.remove('active');
-
-                // 显示错误消息
-                addMessage('网络错误: 请检查后端服务是否正常运行', 'error');
-
-                // 重新启用发送按钮
-                sendButton.disabled = false;
-
-                console.error('Error:', error);
+                body: JSON.stringify({model: selectedModel})
             });
+
+            // 发送请求到后端
+            if (selectedModel === 'judge') {
+                // Judge模式使用非流式请求
+                fetch('/send_message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        model: selectedModel,
+                        is_professional_mode: isProfessionalMode
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // 隐藏"正在输入"指示器
+                    typingIndicator.classList.remove('active');
+
+                    // 处理响应
+                    if (data.response) {
+                        if (data.should_exit) {
+                            addMessage(data.response, 'system');
+                        } else {
+                            // 创建消息元素
+                            const messageElement = document.createElement('div');
+                            messageElement.classList.add('message', 'bot-message', 'markdown-content');
+
+                            // 添加模型信息
+                            if (data.model_used) {
+                                const modelInfo = document.createElement('div');
+                                modelInfo.classList.add('model-info');
+                                modelInfo.textContent = `来自 ${data.model_used}`;
+                                messageElement.appendChild(modelInfo);
+                            }
+
+                            // 渲染Markdown内容
+                            const contentElement = document.createElement('div');
+                            contentElement.innerHTML = marked.parse(data.response);
+                            messageElement.appendChild(contentElement);
+
+                            // 添加裁判理由
+                            if (data.judge_reasoning) {
+                                const reasoningElement = document.createElement('div');
+                                reasoningElement.classList.add('judge-reasoning');
+                                reasoningElement.textContent = data.judge_reasoning;
+                                messageElement.appendChild(reasoningElement);
+                            }
+
+                            chatContainer.appendChild(messageElement);
+                        }
+                    } else if (data.error) {
+                        addMessage('错误: ' + data.error, 'error');
+                    }
+
+                    // 重新启用发送按钮
+                    sendButton.disabled = false;
+
+                    // 滚动到最新消息
+                    scrollToBottom();
+                })
+                .catch(error => {
+                    // 隐藏"正在输入"指示器
+                    typingIndicator.classList.remove('active');
+
+                    // 显示错误消息
+                    addMessage('网络错误: ' + error, 'error');
+
+                    // 重新启用发送按钮
+                    sendButton.disabled = false;
+
+                    console.error('Error:', error);
+                });
+            } else {
+                // 其他模型使用流式请求
+                fetch('/send_message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        model: selectedModel,
+                        is_professional_mode: isProfessionalMode
+                    })
+                })
+                .then(response => {
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+
+                    function readStream() {
+                        return reader.read().then(({ done, value }) => {
+                            if (done) {
+                                // 流结束
+                                typingIndicator.classList.remove('active');
+                                sendButton.disabled = false;
+
+                                // 如果有完整的响应，用Markdown重新渲染
+                                if (currentStreamingMessage && currentFullResponse) {
+                                    currentStreamingMessage.classList.add('markdown-content');
+                                    currentStreamingMessage.innerHTML = '';
+
+                                    if (currentModelUsed) {
+                                        const modelInfo = document.createElement('div');
+                                        modelInfo.classList.add('model-info');
+                                        modelInfo.textContent = `来自 ${currentModelUsed}`;
+                                        currentStreamingMessage.appendChild(modelInfo);
+                                    }
+
+                                    const contentElement = document.createElement('div');
+                                    contentElement.innerHTML = marked.parse(currentFullResponse);
+                                    currentStreamingMessage.appendChild(contentElement);
+                                }
+
+                                scrollToBottom();
+                                return;
+                            }
+
+                            // 解码并处理数据
+                            const chunk = decoder.decode(value, { stream: true });
+                            const lines = chunk.split('\n');
+
+                            for (const line of lines) {
+                                if (line.startsWith('data: ')) {
+                                    try {
+                                        const data = JSON.parse(line.slice(6));
+
+                                        switch(data.event) {
+                                            case 'model_info':
+                                                currentModelUsed = data.model_used;
+                                                break;
+
+                                            case 'chunk':
+                                                if (!currentStreamingMessage) {
+                                                    // 创建新的消息元素
+                                                    currentStreamingMessage = document.createElement('div');
+                                                    currentStreamingMessage.classList.add('message', 'bot-message');
+                                                    chatContainer.appendChild(currentStreamingMessage);
+
+                                                    // 添加模型信息
+                                                    if (currentModelUsed) {
+                                                        const modelInfo = document.createElement('div');
+                                                        modelInfo.classList.add('model-info');
+                                                        modelInfo.textContent = `来自 ${currentModelUsed}`;
+                                                        currentStreamingMessage.appendChild(modelInfo);
+                                                    }
+
+                                                    // 创建内容容器
+                                                    const contentElement = document.createElement('div');
+                                                    contentElement.id = 'streaming-content';
+                                                    currentStreamingMessage.appendChild(contentElement);
+                                                }
+
+                                                // 追加内容
+                                                currentFullResponse += data.chunk;
+                                                document.getElementById('streaming-content').textContent = currentFullResponse;
+                                                scrollToBottom();
+                                                break;
+
+                                            case 'error':
+                                                addMessage('流式传输错误: ' + data.error, 'error');
+                                                typingIndicator.classList.remove('active');
+                                                sendButton.disabled = false;
+                                                return;
+
+                                            case 'end_of_stream':
+                                                // 流正常结束，继续读取直到完成
+                                                break;
+                                        }
+                                    } catch (e) {
+                                        console.error('解析流数据错误:', e);
+                                    }
+                                }
+                            }
+
+                            // 继续读取
+                            return readStream();
+                        });
+                    }
+
+                    return readStream();
+                })
+                .catch(error => {
+                    // 隐藏"正在输入"指示器
+                    typingIndicator.classList.remove('active');
+
+                    // 显示错误消息
+                    addMessage('网络错误: ' + error, 'error');
+
+                    // 重新启用发送按钮
+                    sendButton.disabled = false;
+
+                    console.error('Error:', error);
+                });
+            }
         }
 
         // 添加消息到聊天界面
@@ -378,6 +720,15 @@
 
         // 查看历史按钮
         viewHistoryBtn.addEventListener('click', viewChatHistory);
+
+        // 模型选择变更
+        modelSelect.addEventListener('change', updateModelInfo);
+
+        // 专业模式切换
+        professionalMode.addEventListener('change', updateModelInfo);
+
+        // 初始化模型信息显示
+        updateModelInfo();
     });
 </script>
 </body>
