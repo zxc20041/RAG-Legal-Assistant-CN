@@ -18,8 +18,8 @@ class LegalCaseRetriever:
     model_loaded = False
     def __init__(self, database_path, index_path, model_path, caseid_mapping_path):
         """初始化检索系统"""
+
         print("正在加载案件检索系统...")
-        #print(torch.cuda.is_available())
         # 加载案件数据库
         with open(database_path, 'r', encoding='utf-8') as f:
             database = json.load(f)
@@ -41,8 +41,8 @@ class LegalCaseRetriever:
         # 加载嵌入模型
         self.model = SentenceTransformer(model_path, trust_remote_code=True)
         # 加载到GPU（如果可用）
-        #device = 'cuda' if hasattr(self.model, 'device') else 'cpu'
-        device = 'cpu'
+        device = 'cuda' if hasattr(self.model, 'device') else 'cpu'
+        #device = 'cpu'
         self.model.to(device)
         print(f"✓ 嵌入模型已加载到: {device}")
 
