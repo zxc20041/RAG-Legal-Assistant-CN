@@ -114,7 +114,7 @@ def main_chat_loop(selected_model_id, is_professional_mode=False):
             stream_had_error = False # <--- (新增) 错误标志
             try:
                 # (修改) 增加 stream=True，使用 with 语句确保连接关闭
-                with requests.post(API_URL, headers=headers, json=payload, stream=True, timeout=60) as response:
+                with requests.post(API_URL, headers=headers, json=payload, stream=True, timeout=120) as response:
                     response.raise_for_status()
                     
                     print("助手 (正在思考...): ", end="")
@@ -203,9 +203,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        choices=['deepseek', 'zhipu', 'gpt4o', 'claude', 'qwen', 'doubao', 'grok', 'judge'],
+        choices=['deepseek', 'zhipu', 'gpt4o', 'claude', 'qwen', 'grok', 'judge'],
         default='deepseek',
-        help="选择要使用的大模型 (可选项: deepseek, zhipu, gpt4o, claude, qwen, doubao, grok 或 'judge' 模式)"
+        help="选择要使用的大模型 (可选项: deepseek, zhipu, gpt4o, claude, qwen, grok 或 'judge' 模式)"
     )
     
     # (新增) 专业模式开关
