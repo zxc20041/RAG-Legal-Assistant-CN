@@ -146,6 +146,7 @@
             padding: 15px;
             border-top: 1px solid #eee;
             background-color: white;
+            position: relative;
         }
 
         .input-container input {
@@ -176,6 +177,15 @@
         .input-container button:disabled {
             background-color: #95a5a6;
             cursor: not-allowed;
+        }
+
+        .cancel-button {
+            background-color: #e74c3c !important;
+            display: none;
+        }
+
+        .cancel-button:hover {
+            background-color: #c0392b !important;
         }
 
         .typing-indicator {
@@ -348,6 +358,7 @@
     <div class="input-container">
         <input type="text" id="user-input" placeholder="请输入您的法律问题..." autocomplete="off">
         <button id="send-button">发送</button>
+        <button id="cancel-button" class="cancel-button">取消思考</button>
     </div>
 </div>
 
@@ -372,6 +383,7 @@
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
         const sendButton = document.getElementById('send-button');
+        const cancelButton = document.getElementById('cancel-button');
         const typingIndicator = document.getElementById('typing-indicator');
         const clearHistoryBtn = document.getElementById('clear-history');
         const viewHistoryBtn = document.getElementById('view-history');
@@ -382,6 +394,8 @@
         let currentStreamingMessage = null;
         let currentFullResponse = '';
         let currentModelUsed = '';
+        let currentReader = null; // 用于存储当前流的reader，以便取消
+        let currentAbortController = null; // 用于取消请求
 
         // 从session恢复设置
         fetch('/get_settings')
@@ -403,6 +417,31 @@
             currentModelInfo.textContent = `当前: ${model}${isPro ? ' (专业模式)' : ''}`;
         }
 
+        // 取消当前请求
+        function cancelCurrentRequest() {
+            if (currentAbortController) {
+                currentAbortController.abort();
+                currentAbortController = null;
+            }
+
+            if (currentReader) {
+                currentReader.cancel();
+                currentReader = null;
+            }
+
+            // 隐藏"正在输入"指示器
+            typingIndicator.classList.remove('active');
+
+            // 隐藏取消按钮
+            cancelButton.style.display = 'none';
+
+            // 重新启用发送按钮
+            sendButton.disabled = false;
+
+            // 添加取消消息
+            addMessage('思考已取消', 'system');
+        }
+
         // 发送消息函数
         function sendMessage() {
             const message = userInput.value.trim();
@@ -420,10 +459,17 @@
             // 显示"正在输入"指示器
             typingIndicator.classList.add('active');
 
+            // 显示取消按钮
+            cancelButton.style.display = 'block';
+
             // 重置流式消息状态
             currentStreamingMessage = null;
             currentFullResponse = '';
             currentModelUsed = '';
+            currentReader = null;
+
+            // 创建AbortController用于取消请求
+            currentAbortController = new AbortController();
 
             // 获取当前设置
             const selectedModel = modelSelect.value;
@@ -450,12 +496,20 @@
                         message: message,
                         model: selectedModel,
                         is_professional_mode: isProfessionalMode
-                    })
+                    }),
+                    signal: currentAbortController.signal
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    // 隐藏"正在输入"指示器
+                    // 隐藏"正在输入"指示器和取消按钮
                     typingIndicator.classList.remove('active');
+                    cancelButton.style.display = 'none';
+                    currentAbortController = null;
 
                     // 处理响应
                     if (data.response) {
@@ -500,11 +554,18 @@
                     scrollToBottom();
                 })
                 .catch(error => {
-                    // 隐藏"正在输入"指示器
+                    // 隐藏"正在输入"指示器和取消按钮
                     typingIndicator.classList.remove('active');
+                    cancelButton.style.display = 'none';
+                    currentAbortController = null;
+
+                    // 如果是取消请求，则不显示错误
+                    if (error.name === 'AbortError') {
+                        return;
+                    }
 
                     // 显示错误消息
-                    addMessage('网络错误: ' + error, 'error');
+                    addMessage('网络错误: ' + error.message, 'error');
 
                     // 重新启用发送按钮
                     sendButton.disabled = false;
@@ -522,18 +583,31 @@
                         message: message,
                         model: selectedModel,
                         is_professional_mode: isProfessionalMode
-                    })
+                    }),
+                    signal: currentAbortController.signal
                 })
                 .then(response => {
-                    const reader = response.body.getReader();
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    currentReader = response.body.getReader();
                     const decoder = new TextDecoder();
 
                     function readStream() {
-                        return reader.read().then(({ done, value }) => {
+                        return currentReader.read().then(({ done, value }) => {
+                            // 检查是否已取消
+                            if (currentAbortController && currentAbortController.signal.aborted) {
+                                return;
+                            }
+
                             if (done) {
                                 // 流结束
                                 typingIndicator.classList.remove('active');
+                                cancelButton.style.display = 'none';
+                                currentAbortController = null;
                                 sendButton.disabled = false;
+                                currentReader = null;
 
                                 // 如果有完整的响应，用Markdown重新渲染
                                 if (currentStreamingMessage && currentFullResponse) {
@@ -600,6 +674,8 @@
                                             case 'error':
                                                 addMessage('流式传输错误: ' + data.error, 'error');
                                                 typingIndicator.classList.remove('active');
+                                                cancelButton.style.display = 'none';
+                                                currentAbortController = null;
                                                 sendButton.disabled = false;
                                                 return;
 
@@ -621,11 +697,19 @@
                     return readStream();
                 })
                 .catch(error => {
-                    // 隐藏"正在输入"指示器
+                    // 隐藏"正在输入"指示器和取消按钮
                     typingIndicator.classList.remove('active');
+                    cancelButton.style.display = 'none';
+                    currentAbortController = null;
+                    currentReader = null;
+
+                    // 如果是取消请求，则不显示错误
+                    if (error.name === 'AbortError') {
+                        return;
+                    }
 
                     // 显示错误消息
-                    addMessage('网络错误: ' + error, 'error');
+                    addMessage('网络错误: ' + error.message, 'error');
 
                     // 重新启用发送按钮
                     sendButton.disabled = false;
@@ -702,6 +786,9 @@
 
         // 发送按钮点击事件
         sendButton.addEventListener('click', sendMessage);
+
+        // 取消按钮点击事件
+        cancelButton.addEventListener('click', cancelCurrentRequest);
 
         // 输入框回车事件
         userInput.addEventListener('keypress', function(e) {

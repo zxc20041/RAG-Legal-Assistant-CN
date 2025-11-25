@@ -13,6 +13,9 @@ API_URL = "http://127.0.0.1:5000/predict"
 # 全局变量，用于存储检索系统组件
 retrieval_system = None
 
+# 全局变量，用于存储当前请求的会话，以便取消
+current_requests = {}
+
 class LegalCaseRetriever:
     """法律案件检索器"""
     model_loaded = False
@@ -267,6 +270,13 @@ def handle_streaming_request(payload, headers, conversation_history, user_messag
             yield f"data: {json.dumps({'event': 'error', 'error': f'网络请求错误: {str(e)}'})}\n\n"
 
     return Response(stream_with_context(generate()), content_type='text/plain')
+
+@app.route('/cancel_request', methods=['POST'])
+def cancel_request():
+    """取消当前请求"""
+    # 这里可以添加取消逻辑，但目前Flask的流式响应一旦开始就无法从服务器端取消
+    # 主要取消逻辑在前端实现
+    return jsonify({'success': True, 'message': '取消请求已发送'})
 
 @app.route('/clear_history', methods=['POST'])
 def clear_history():
