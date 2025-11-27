@@ -13,9 +13,6 @@ API_URL = "http://127.0.0.1:5000/predict"
 # 全局变量，用于存储检索系统组件
 retrieval_system = None
 
-# 全局变量，用于存储当前请求的会话，以便取消
-current_requests = {}
-
 class LegalCaseRetriever:
     """法律案件检索器"""
     model_loaded = False
@@ -131,21 +128,35 @@ def index():
         session['conversation_history'] = []
     if 'selected_model' not in session:
         session['selected_model'] = 'deepseek'  # 默认模型
+    if 'rag_enabled' not in session:
+        session['rag_enabled'] = True  # 默认开启RAG
+    if 'disclaimer_accepted' not in session:
+        session['disclaimer_accepted'] = False  # 免责声明未接受
     return render_template('index.html')
+
+@app.route('/accept_disclaimer', methods=['POST'])
+def accept_disclaimer():
+    """用户接受免责声明"""
+    session['disclaimer_accepted'] = True
+    return jsonify({'success': True, 'message': '免责声明已接受'})
 
 @app.route('/send_message', methods=['POST'])
 def send_message():
     """接收用户消息并转发到后端API - 支持流式响应"""
     try:
+        # 检查用户是否已接受免责声明
+        if not session.get('disclaimer_accepted', False):
+            return jsonify({'error': '请先阅读并接受免责声明'}), 403
+
         # 获取用户输入和参数
         user_message = request.json.get('message', '')
         selected_model = request.json.get('model', session.get('selected_model', 'deepseek'))
         is_professional_mode = request.json.get('is_professional_mode', False)
-        use_real_retrieval = True
-        # = request.json.get('use_real_retrieval', False)  # 新增：是否使用真实检索
+        rag_enabled = request.json.get('rag_enabled', session.get('rag_enabled', True))  # 获取RAG开关状态
 
-        # 保存模型选择
+        # 保存模型选择和RAG设置
         session['selected_model'] = selected_model
+        session['rag_enabled'] = rag_enabled
 
         if not user_message:
             return jsonify({'error': '消息不能为空'}), 400
@@ -154,14 +165,16 @@ def send_message():
         conversation_history = session.get('conversation_history', [])
 
         # 确定使用的RAG数据
-        if use_real_retrieval and retrieval_system is not None:
+        current_rag_data = []
+        if rag_enabled and retrieval_system is not None:
             # 使用检索数据
+            print(f"正在进行RAG检索，查询: {user_message}")
             retrieval_results = retrieval_system.search_similar_cases(user_message, k=2, min_score=0.4)
             current_rag_data = [result['formatted_case'] for result in retrieval_results]
+            print(f"RAG检索完成，找到 {len(current_rag_data)} 个相关案例")
         else:
-            # 使用空数据
-            current_rag_data = []
-            print("警告: 检索数据为空")
+            # RAG关闭，使用空数据
+            print("RAG功能已关闭，不使用案例检索")
 
         # 构造发送给API的请求数据
         payload = {
@@ -270,6 +283,14 @@ def handle_streaming_request(payload, headers, conversation_history, user_messag
             yield f"data: {json.dumps({'event': 'error', 'error': f'网络请求错误: {str(e)}'})}\n\n"
 
     return Response(stream_with_context(generate()), content_type='text/plain')
+
+@app.route('/toggle_rag', methods=['POST'])
+def toggle_rag():
+    """切换RAG开关状态"""
+    data = request.get_json()
+    rag_enabled = data.get('rag_enabled', True)
+    session['rag_enabled'] = rag_enabled
+    return jsonify({'success': True, 'rag_enabled': rag_enabled})
 
 @app.route('/cancel_request', methods=['POST'])
 def cancel_request():

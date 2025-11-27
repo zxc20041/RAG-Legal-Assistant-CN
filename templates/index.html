@@ -97,6 +97,57 @@
             background-color: white;
         }
 
+        .rag-toggle {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .rag-toggle .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .rag-toggle .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .rag-toggle .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .rag-toggle .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        .rag-toggle input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        .rag-toggle input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
         .chat-container {
             flex: 1;
             padding: 20px;
@@ -253,6 +304,77 @@
             color: #856404;
         }
 
+        /* 免责声明弹窗样式 */
+        .disclaimer-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .disclaimer-modal.active {
+            display: flex;
+        }
+
+        .disclaimer-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .disclaimer-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .disclaimer-text {
+            margin-bottom: 25px;
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+
+        .disclaimer-warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .disclaimer-actions {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .disclaimer-button {
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 12px 30px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .disclaimer-button:hover {
+            background-color: #1a252f;
+        }
+
         /* Markdown样式 */
         .markdown-content h1, .markdown-content h2, .markdown-content h3 {
             margin-top: 1rem;
@@ -308,7 +430,36 @@
     </style>
 </head>
 <body>
-<div class="container">
+<!-- 免责声明弹窗 -->
+<div class="disclaimer-modal active" id="disclaimer-modal">
+    <div class="disclaimer-content">
+        <div class="disclaimer-title">隐私政策与免责声明</div>
+        <div class="disclaimer-text">
+            <p>欢迎使用法律小助手！在开始使用前，请您仔细阅读以下重要声明：</p>
+
+            <div class="disclaimer-warning">
+                <p><strong>重要提示：</strong></p>
+                <p>本报告仅基于您所提供的信息和历史数据生成，不构成任何形式的法律意见或建议。您的具体情况请务必咨询专业执业律师。</p>
+            </div>
+
+            <p><strong>使用须知：</strong></p>
+            <ul>
+                <li>本系统提供的信息仅供参考，不应作为法律决策的唯一依据</li>
+                <li>系统生成的内容可能不完整、不准确或不适用于您的具体情况</li>
+                <li>对于因使用本系统提供的信息而导致的任何损失或损害，我们不承担任何责任</li>
+                <li>我们尊重并保护您的隐私，对话内容仅用于提供服务和改善用户体验</li>
+                <li>请勿在对话中分享敏感个人信息，如身份证号、银行账户等</li>
+            </ul>
+
+            <p>点击"我已知悉"按钮即表示您已阅读、理解并同意以上声明。</p>
+        </div>
+        <div class="disclaimer-actions">
+            <button class="disclaimer-button" id="accept-disclaimer">我已知悉</button>
+        </div>
+    </div>
+</div>
+
+<div class="container" id="main-container" style="display: none;">
     <div class="header">
         <h1>法律小助手</h1>
         <div class="header-actions">
@@ -326,7 +477,6 @@
                 <option value="gpt4o">GPT-4o</option>
                 <option value="claude">Claude</option>
                 <option value="qwen">Qwen</option>
-                <option value="doubao">豆包</option>
                 <option value="grok">Grok</option>
                 <option value="judge">Judge模式</option>
             </select>
@@ -334,6 +484,14 @@
         <div class="setting-group">
             <input type="checkbox" id="professional-mode">
             <label for="professional-mode">专业模式</label>
+        </div>
+        <div class="rag-toggle">
+            <label for="rag-toggle">案例检索:</label>
+            <label class="switch">
+                <input type="checkbox" id="rag-toggle" checked>
+                <span class="slider"></span>
+            </label>
+            <span id="rag-status">开启</span>
         </div>
         <div class="setting-group" id="current-model-info">
             <!-- 当前模型信息将在这里显示 -->
@@ -380,6 +538,9 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
+        const disclaimerModal = document.getElementById('disclaimer-modal');
+        const mainContainer = document.getElementById('main-container');
+        const acceptDisclaimerBtn = document.getElementById('accept-disclaimer');
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
         const sendButton = document.getElementById('send-button');
@@ -389,6 +550,8 @@
         const viewHistoryBtn = document.getElementById('view-history');
         const modelSelect = document.getElementById('model-select');
         const professionalMode = document.getElementById('professional-mode');
+        const ragToggle = document.getElementById('rag-toggle');
+        const ragStatus = document.getElementById('rag-status');
         const currentModelInfo = document.getElementById('current-model-info');
 
         let currentStreamingMessage = null;
@@ -396,6 +559,40 @@
         let currentModelUsed = '';
         let currentReader = null; // 用于存储当前流的reader，以便取消
         let currentAbortController = null; // 用于取消请求
+        let disclaimerAccepted = false; // 免责声明接受状态
+
+        // 检查是否已经接受过免责声明
+        function checkDisclaimerStatus() {
+            // 这里可以添加从localStorage或服务器检查状态的逻辑
+            // 暂时默认未接受，显示弹窗
+            disclaimerModal.classList.add('active');
+            mainContainer.style.display = 'none';
+        }
+
+        // 接受免责声明
+        function acceptDisclaimer() {
+            fetch('/accept_disclaimer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    disclaimerAccepted = true;
+                    disclaimerModal.classList.remove('active');
+                    mainContainer.style.display = 'flex';
+                }
+            })
+            .catch(error => {
+                console.error('接受免责声明失败:', error);
+                // 即使请求失败，也允许用户继续使用
+                disclaimerAccepted = true;
+                disclaimerModal.classList.remove('active');
+                mainContainer.style.display = 'flex';
+            });
+        }
 
         // 从session恢复设置
         fetch('/get_settings')
@@ -414,7 +611,25 @@
         function updateModelInfo() {
             const model = modelSelect.value;
             const isPro = professionalMode.checked;
-            currentModelInfo.textContent = `当前: ${model}${isPro ? ' (专业模式)' : ''}`;
+            const isRagEnabled = ragToggle.checked;
+            currentModelInfo.textContent = `当前: ${model}${isPro ? ' (专业模式)' : ''}${isRagEnabled ? ' | 案例检索: 开启' : ' | 案例检索: 关闭'}`;
+        }
+
+        // 更新RAG状态显示
+        function updateRagStatus() {
+            const isEnabled = ragToggle.checked;
+            ragStatus.textContent = isEnabled ? '开启' : '关闭';
+            ragStatus.style.color = isEnabled ? '#28a745' : '#dc3545';
+            updateModelInfo();
+
+            // 保存RAG设置到服务器
+            fetch('/toggle_rag', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({rag_enabled: isEnabled})
+            });
         }
 
         // 取消当前请求
@@ -444,6 +659,12 @@
 
         // 发送消息函数
         function sendMessage() {
+            // 检查是否已接受免责声明
+            if (!disclaimerAccepted) {
+                addMessage('请先阅读并接受免责声明', 'error');
+                return;
+            }
+
             const message = userInput.value.trim();
             if (!message) return;
 
@@ -474,6 +695,7 @@
             // 获取当前设置
             const selectedModel = modelSelect.value;
             const isProfessionalMode = professionalMode.checked;
+            const isRagEnabled = ragToggle.checked;
 
             // 保存模型设置
             fetch('/set_model', {
@@ -495,7 +717,8 @@
                     body: JSON.stringify({
                         message: message,
                         model: selectedModel,
-                        is_professional_mode: isProfessionalMode
+                        is_professional_mode: isProfessionalMode,
+                        rag_enabled: isRagEnabled
                     }),
                     signal: currentAbortController.signal
                 })
@@ -582,7 +805,8 @@
                     body: JSON.stringify({
                         message: message,
                         model: selectedModel,
-                        is_professional_mode: isProfessionalMode
+                        is_professional_mode: isProfessionalMode,
+                        rag_enabled: isRagEnabled
                     }),
                     signal: currentAbortController.signal
                 })
@@ -790,6 +1014,12 @@
         // 取消按钮点击事件
         cancelButton.addEventListener('click', cancelCurrentRequest);
 
+        // 接受免责声明按钮点击事件
+        acceptDisclaimerBtn.addEventListener('click', acceptDisclaimer);
+
+        // RAG开关切换事件
+        ragToggle.addEventListener('change', updateRagStatus);
+
         // 输入框回车事件
         userInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
@@ -814,8 +1044,10 @@
         // 专业模式切换
         professionalMode.addEventListener('change', updateModelInfo);
 
-        // 初始化模型信息显示
+        // 初始化
+        checkDisclaimerStatus();
         updateModelInfo();
+        updateRagStatus();
     });
 </script>
 </body>
