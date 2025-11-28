@@ -121,6 +121,75 @@ def initialize_retrieval_system():
         print(f"检索系统初始化失败: {e}")
         return False
 
+# 修改 handle_judge_request 和 handle_streaming_request 函数中的历史更新部分
+# 添加对话历史大小限制 (3KB = 3072 bytes)
+MAX_HISTORY_SIZE = 3072
+
+def trim_conversation_history(history):
+    """修剪对话历史，确保总大小不超过 MAX_HISTORY_SIZE"""
+    if not history:
+        return history
+
+    # 计算当前历史的总大小
+    def calculate_size(hist):
+        return len(json.dumps(hist, ensure_ascii=False).encode('utf-8'))
+
+    current_size = calculate_size(history)
+    original_count = len(history)
+
+    # 如果已经在限制内，直接返回
+    if current_size <= MAX_HISTORY_SIZE:
+        print(f"对话历史已保存: {len(history)} 条消息, 大小: {current_size} bytes")
+        return history
+
+    # 从最旧的消息开始删除，直到大小在限制内
+    trimmed_history = history.copy()
+    while trimmed_history and calculate_size(trimmed_history) > MAX_HISTORY_SIZE:
+        # 优先删除最旧的消息（列表开头的消息）
+        removed_msg = trimmed_history.pop(0)
+        print(f"删除旧消息: {removed_msg.get('role', 'unknown')} - {removed_msg.get('content', '')[:50]}...")
+
+    final_size = calculate_size(trimmed_history)
+    final_count = len(trimmed_history)
+    print(f"对话历史修剪完成: {original_count} -> {final_count} 条消息, {current_size} -> {final_size} bytes")
+
+    return trimmed_history
+
+def smart_trim_conversation_history(history, new_messages=None):
+    """智能修剪对话历史，添加新消息后确保不超过大小限制"""
+    if new_messages:
+        # 临时添加新消息来计算总大小
+        temp_history = history + new_messages
+    else:
+        temp_history = history
+
+    # 计算总大小
+    def calculate_size(hist):
+        return len(json.dumps(hist, ensure_ascii=False).encode('utf-8'))
+
+    current_size = calculate_size(temp_history)
+    original_count = len(temp_history)
+
+    # 如果已经在限制内，直接返回
+    if current_size <= MAX_HISTORY_SIZE:
+        print(f"对话历史已保存: {len(temp_history)} 条消息, 大小: {current_size} bytes")
+        return temp_history
+
+    # 需要修剪，优先保留最新的对话
+    trimmed_history = temp_history.copy()
+
+    # 计算需要删除的消息数量（从最旧的开始）
+    while trimmed_history and calculate_size(trimmed_history) > MAX_HISTORY_SIZE:
+        # 删除最旧的消息
+        removed_msg = trimmed_history.pop(0)
+        print(f"删除旧消息: {removed_msg.get('role', 'unknown')} - {removed_msg.get('content', '')[:50]}...")
+
+    final_size = calculate_size(trimmed_history)
+    final_count = len(trimmed_history)
+    print(f"对话历史修剪完成: {original_count} -> {final_count} 条消息, {current_size} -> {final_size} bytes")
+
+    return trimmed_history
+
 @app.route('/')
 def index():
     """主页面"""
@@ -152,7 +221,7 @@ def send_message():
         user_message = request.json.get('message', '')
         selected_model = request.json.get('model', session.get('selected_model', 'deepseek'))
         is_professional_mode = request.json.get('is_professional_mode', False)
-        rag_enabled = request.json.get('rag_enabled', session.get('rag_enabled', True))  # 获取RAG开关状态
+        rag_enabled = request.json.get('rag_enabled', session.get('rag_enabled', True))
 
         # 保存模型选择和RAG设置
         session['selected_model'] = selected_model
@@ -167,13 +236,11 @@ def send_message():
         # 确定使用的RAG数据
         current_rag_data = []
         if rag_enabled and retrieval_system is not None:
-            # 使用检索数据
             print(f"正在进行RAG检索，查询: {user_message}")
             retrieval_results = retrieval_system.search_similar_cases(user_message, k=2, min_score=0.4)
             current_rag_data = [result['formatted_case'] for result in retrieval_results]
             print(f"RAG检索完成，找到 {len(current_rag_data)} 个相关案例")
         else:
-            # RAG关闭，使用空数据
             print("RAG功能已关闭，不使用案例检索")
 
         # 构造发送给API的请求数据
@@ -207,16 +274,22 @@ def handle_judge_request(payload, headers, conversation_history, user_message):
         if "prediction" in result:
             assistant_response = result["prediction"]
             model_used = result.get("model_used", "未知")
+            judge_reasoning = result.get("judge_reasoning", "")
+            all_answers = result.get("all_answers", {})
 
-            # 更新对话历史
-            conversation_history.append({"role": "user", "content": user_message})
-            conversation_history.append({"role": "assistant", "content": assistant_response})
+            # 更新对话历史（使用智能修剪）
+            new_messages = [
+                {"role": "user", "content": user_message},
+                {"role": "assistant", "content": assistant_response}
+            ]
+            conversation_history = smart_trim_conversation_history(conversation_history, new_messages)
             session['conversation_history'] = conversation_history
 
             return jsonify({
                 'response': assistant_response,
                 'model_used': model_used,
-                'judge_reasoning': result.get("judge_reasoning", ""),
+                'judge_reasoning': judge_reasoning,
+                'all_answers': all_answers,
                 'should_exit': False
             })
         else:
@@ -230,6 +303,7 @@ def handle_judge_request(payload, headers, conversation_history, user_message):
 def handle_streaming_request(payload, headers, conversation_history, user_message):
     """处理流式请求"""
     def generate():
+        nonlocal conversation_history
         full_response = ""
         model_used = ""
         stream_had_error = False
@@ -248,9 +322,12 @@ def handle_streaming_request(payload, headers, conversation_history, user_messag
                     elif line.startswith("event: end_of_stream"):
                         # 流结束
                         if full_response and not stream_had_error:
-                            # 更新对话历史
-                            conversation_history.append({"role": "user", "content": user_message})
-                            conversation_history.append({"role": "assistant", "content": full_response})
+                            # 更新对话历史（使用智能修剪）
+                            new_messages = [
+                                {"role": "user", "content": user_message},
+                                {"role": "assistant", "content": full_response}
+                            ]
+                            conversation_history = smart_trim_conversation_history(conversation_history, new_messages)
                             session['conversation_history'] = conversation_history
 
                         yield f"data: {json.dumps({'event': 'end_of_stream', 'full_response': full_response})}\n\n"

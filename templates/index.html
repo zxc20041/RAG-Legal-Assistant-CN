@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>法律小助手</title>
     <!-- 引入marked.js用于Markdown渲染 -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- 引入highlight.js用于代码高亮 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js/styles/github.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js/lib/highlight.min.js"></script>
+    <!-- 替换为国内CDN -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/marked/4.0.2/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -163,6 +164,7 @@
             max-width: 80%;
             word-wrap: break-word;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            position: relative;
         }
 
         .user-message {
@@ -304,6 +306,36 @@
             color: #856404;
         }
 
+        /* 复制按钮样式 */
+        .copy-button {
+            position: absolute;
+            bottom: 5px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-size: 0.7rem;
+            color: #666;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s, background-color 0.3s;
+        }
+
+        .message:hover .copy-button {
+            opacity: 1;
+        }
+
+        .copy-button:hover {
+            background-color: rgba(0, 0, 0, 0.2);
+            color: #333;
+        }
+
+        .copy-button.copied {
+            background-color: #28a745;
+            color: white;
+        }
+
         /* 免责声明弹窗样式 */
         .disclaimer-modal {
             display: none;
@@ -427,6 +459,64 @@
         .markdown-content th {
             background-color: #f2f2f2;
         }
+
+        /* Judge模式选择器样式 */
+        .judge-selector {
+            margin: 10px 0;
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        .model-select-label {
+            font-weight: bold;
+            color: #495057;
+            margin-right: 10px;
+        }
+
+        .model-select {
+            padding: 5px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background-color: white;
+            font-size: 0.9rem;
+        }
+
+        .model-select:focus {
+            outline: none;
+            border-color: #2196F3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+        }
+
+        .judge-reasoning {
+            background-color: #e8f4fd;
+            border-left: 4px solid #2196F3;
+            padding: 10px 15px;
+            margin: 10px 0;
+            font-size: 0.9rem;
+            color: #2c3e50;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .model-response {
+            display: none;
+        }
+
+        .model-response.active {
+            display: block;
+        }
+
+        .best-answer-badge {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            margin-left: 8px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -501,6 +591,7 @@
     <div class="chat-container" id="chat-container">
         <div class="message bot-message">
             您好！我是法律小助手，请问有什么法律问题需要咨询吗？
+            <button class="copy-button" onclick="copyMessageContent(this)">复制</button>
         </div>
     </div>
 
@@ -537,6 +628,129 @@
         gfm: true
     });
 
+    // 复制消息内容函数
+    function copyMessageContent(button) {
+        const messageElement = button.parentElement;
+        let textToCopy = '';
+        
+        // 如果是Markdown内容，获取原始文本
+        if (messageElement.classList.contains('markdown-content')) {
+            // 移除模型信息和裁判理由
+            const contentElement = messageElement.querySelector('div:not(.model-info):not(.judge-reasoning)');
+            if (contentElement) {
+                textToCopy = contentElement.textContent || contentElement.innerText;
+            } else {
+                // 回退方案：获取整个消息的文本内容，但排除按钮文本
+                const clone = messageElement.cloneNode(true);
+                const buttons = clone.querySelectorAll('.copy-button');
+                buttons.forEach(btn => btn.remove());
+                textToCopy = clone.textContent || clone.innerText;
+            }
+        } else {
+            // 普通消息，直接获取文本内容，排除按钮文本
+            const clone = messageElement.cloneNode(true);
+            const buttons = clone.querySelectorAll('.copy-button');
+            buttons.forEach(btn => btn.remove());
+            textToCopy = clone.textContent || clone.innerText;
+        }
+        
+        // 清理文本（移除多余的空格和换行）
+        textToCopy = textToCopy.replace(/\s+/g, ' ').trim();
+        
+        // 使用Clipboard API复制文本
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            // 显示复制成功反馈
+            const originalText = button.textContent;
+            button.textContent = '已复制!';
+            button.classList.add('copied');
+            
+            // 2秒后恢复原状
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.classList.remove('copied');
+            }, 2000);
+        }).catch(err => {
+            console.error('复制失败:', err);
+            // 降级方案：使用execCommand
+            const textArea = document.createElement('textarea');
+            textArea.value = textToCopy;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                // 显示复制成功反馈
+                const originalText = button.textContent;
+                button.textContent = '已复制!';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                console.error('降级复制也失败:', err);
+                alert('复制失败，请手动选择文本复制');
+            }
+            document.body.removeChild(textArea);
+        });
+    }
+
+
+
+    // 复制Judge模式消息内容的函数
+    function copyJudgeMessageContent(button, contentElement) {
+        let textToCopy = '';
+
+        if (contentElement) {
+            // 获取原始文本内容（去除HTML标签）
+            const clone = contentElement.cloneNode(true);
+            const modelInfo = clone.querySelector('.model-info');
+            if (modelInfo) modelInfo.remove();
+
+            textToCopy = clone.textContent || clone.innerText;
+        }
+
+        // 清理文本
+        textToCopy = textToCopy.replace(/\s+/g, ' ').trim();
+
+        // 使用Clipboard API复制文本
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            // 显示复制成功反馈
+            const originalText = button.textContent;
+            button.textContent = '已复制!';
+            button.classList.add('copied');
+
+            // 2秒后恢复原状
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.classList.remove('copied');
+            }, 2000);
+        }).catch(err => {
+            console.error('复制失败:', err);
+            // 降级方案
+            const textArea = document.createElement('textarea');
+            textArea.value = textToCopy;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                const originalText = button.textContent;
+                button.textContent = '已复制!';
+                button.classList.add('copied');
+
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                console.error('降级复制也失败:', err);
+                alert('复制失败，请手动选择文本复制');
+            }
+            document.body.removeChild(textArea);
+        });
+    }
+
+
     document.addEventListener('DOMContentLoaded', function() {
         const disclaimerModal = document.getElementById('disclaimer-modal');
         const mainContainer = document.getElementById('main-container');
@@ -560,6 +774,128 @@
         let currentReader = null; // 用于存储当前流的reader，以便取消
         let currentAbortController = null; // 用于取消请求
         let disclaimerAccepted = false; // 免责声明接受状态
+
+        // 显示Judge模式消息的函数
+        function displayJudgeMessage(data) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', 'bot-message', 'markdown-content');
+
+            // 添加模型信息
+            if (data.model_used) {
+                const modelInfo = document.createElement('div');
+                modelInfo.classList.add('model-info');
+                modelInfo.textContent = `来自 ${data.model_used}`;
+                messageElement.appendChild(modelInfo);
+            }
+
+            // 创建模型选择器
+            const selectorContainer = document.createElement('div');
+            selectorContainer.classList.add('judge-selector');
+
+            const selectorLabel = document.createElement('span');
+            selectorLabel.classList.add('model-select-label');
+            selectorLabel.textContent = '选择查看模型回答:';
+            selectorContainer.appendChild(selectorLabel);
+
+            const modelSelect = document.createElement('select');
+            modelSelect.classList.add('model-select');
+            selectorContainer.appendChild(modelSelect);
+
+            // 添加最佳回答选项
+            const bestOption = document.createElement('option');
+            bestOption.value = 'best';
+            bestOption.textContent = '最佳回答 (由Judge选择)';
+            modelSelect.appendChild(bestOption);
+
+            // 添加所有参赛模型的选项
+            if (data.all_answers) {
+                Object.keys(data.all_answers).forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = `模型: ${model}`;
+                    modelSelect.appendChild(option);
+                });
+            }
+
+            messageElement.appendChild(selectorContainer);
+
+            // 创建内容容器
+            const contentContainer = document.createElement('div');
+            contentContainer.classList.add('judge-content-container');
+
+            // 最佳回答内容
+            const bestResponse = document.createElement('div');
+            bestResponse.classList.add('model-response', 'active');
+            bestResponse.id = 'response-best';
+            bestResponse.innerHTML = marked.parse(data.response);
+            contentContainer.appendChild(bestResponse);
+
+            // 各模型原始回答
+            if (data.all_answers) {
+                Object.keys(data.all_answers).forEach(model => {
+                    const modelResponse = document.createElement('div');
+                    modelResponse.classList.add('model-response');
+                    modelResponse.id = `response-${model}`;
+                    modelResponse.innerHTML = marked.parse(data.all_answers[model]);
+                    contentContainer.appendChild(modelResponse);
+                });
+            }
+
+            messageElement.appendChild(contentContainer);
+
+            // 添加裁判理由
+            if (data.judge_reasoning) {
+                const reasoningElement = document.createElement('div');
+                reasoningElement.classList.add('judge-reasoning');
+
+                const reasoningTitle = document.createElement('strong');
+                reasoningTitle.textContent = '裁判理由: ';
+                reasoningElement.appendChild(reasoningTitle);
+
+                const reasoningText = document.createElement('span');
+                reasoningText.textContent = data.judge_reasoning;
+                reasoningElement.appendChild(reasoningText);
+
+                messageElement.appendChild(reasoningElement);
+            }
+
+            // 添加复制按钮
+            const copyButton = document.createElement('button');
+            copyButton.classList.add('copy-button');
+            copyButton.textContent = '复制';
+            copyButton.onclick = function() {
+                const activeResponse = contentContainer.querySelector('.model-response.active');
+                if (activeResponse) {
+                    copyJudgeMessageContent(this, activeResponse);
+                }
+            };
+            messageElement.appendChild(copyButton);
+
+            // 添加选择器事件监听
+            modelSelect.addEventListener('change', function() {
+                const selectedModel = this.value;
+
+                // 隐藏所有响应
+                const allResponses = contentContainer.querySelectorAll('.model-response');
+                allResponses.forEach(response => {
+                    response.classList.remove('active');
+                });
+
+                // 显示选中的响应
+                const selectedResponse = contentContainer.querySelector(`#response-${selectedModel}`);
+                if (selectedResponse) {
+                    selectedResponse.classList.add('active');
+                }
+
+                // 更新复制按钮的目标
+                copyButton.onclick = function() {
+                    copyJudgeMessageContent(this, selectedResponse || bestResponse);
+                };
+            });
+
+            chatContainer.appendChild(messageElement);
+            scrollToBottom();
+        }
 
         // 检查是否已经接受过免责声明
         function checkDisclaimerStatus() {
@@ -595,17 +931,17 @@
         }
 
         // 从session恢复设置
-        fetch('/get_settings')
-            .then(response => response.json())
-            .then(data => {
-                if (data.model) {
-                    modelSelect.value = data.model;
-                }
-                updateModelInfo();
-            })
-            .catch(error => {
-                console.error('获取设置失败:', error);
-            });
+<!--        fetch('/get_settings')-->
+<!--            .then(response => response.json())-->
+<!--            .then(data => {-->
+<!--                if (data.model) {-->
+<!--                    modelSelect.value = data.model;-->
+<!--                }-->
+<!--                updateModelInfo();-->
+<!--            })-->
+<!--            .catch(error => {-->
+<!--                console.error('获取设置失败:', error);-->
+<!--            });-->
 
         // 更新模型信息显示
         function updateModelInfo() {
@@ -735,38 +1071,49 @@
                     currentAbortController = null;
 
                     // 处理响应
+                    // 在sendMessage函数中，修改Judge模式的处理部分
+                    // 找到Judge模式的成功回调，替换为：
                     if (data.response) {
                         if (data.should_exit) {
                             addMessage(data.response, 'system');
                         } else {
-                            // 创建消息元素
-                            const messageElement = document.createElement('div');
-                            messageElement.classList.add('message', 'bot-message', 'markdown-content');
+                            // 如果是Judge模式，使用特殊的显示函数
+                            if (data.model_used && data.model_used.includes('Judge')) {
+                                displayJudgeMessage(data);
+                            } else {
+                                // 普通模式的消息显示
+                                const messageElement = document.createElement('div');
+                                messageElement.classList.add('message', 'bot-message', 'markdown-content');
 
-                            // 添加模型信息
-                            if (data.model_used) {
-                                const modelInfo = document.createElement('div');
-                                modelInfo.classList.add('model-info');
-                                modelInfo.textContent = `来自 ${data.model_used}`;
-                                messageElement.appendChild(modelInfo);
+                                if (data.model_used) {
+                                    const modelInfo = document.createElement('div');
+                                    modelInfo.classList.add('model-info');
+                                    modelInfo.textContent = `来自 ${data.model_used}`;
+                                    messageElement.appendChild(modelInfo);
+                                }
+
+                                const contentElement = document.createElement('div');
+                                contentElement.innerHTML = marked.parse(data.response);
+                                messageElement.appendChild(contentElement);
+
+                                if (data.judge_reasoning) {
+                                    const reasoningElement = document.createElement('div');
+                                    reasoningElement.classList.add('judge-reasoning');
+                                    reasoningElement.textContent = data.judge_reasoning;
+                                    messageElement.appendChild(reasoningElement);
+                                }
+
+                                const copyButton = document.createElement('button');
+                                copyButton.classList.add('copy-button');
+                                copyButton.textContent = '复制';
+                                copyButton.onclick = function() { copyMessageContent(this); };
+                                messageElement.appendChild(copyButton);
+
+                                chatContainer.appendChild(messageElement);
                             }
-
-                            // 渲染Markdown内容
-                            const contentElement = document.createElement('div');
-                            contentElement.innerHTML = marked.parse(data.response);
-                            messageElement.appendChild(contentElement);
-
-                            // 添加裁判理由
-                            if (data.judge_reasoning) {
-                                const reasoningElement = document.createElement('div');
-                                reasoningElement.classList.add('judge-reasoning');
-                                reasoningElement.textContent = data.judge_reasoning;
-                                messageElement.appendChild(reasoningElement);
-                            }
-
-                            chatContainer.appendChild(messageElement);
                         }
-                    } else if (data.error) {
+                    }
+                    else if (data.error) {
                         addMessage('错误: ' + data.error, 'error');
                     }
 
@@ -848,6 +1195,13 @@
                                     const contentElement = document.createElement('div');
                                     contentElement.innerHTML = marked.parse(currentFullResponse);
                                     currentStreamingMessage.appendChild(contentElement);
+
+                                    // 添加复制按钮
+                                    const copyButton = document.createElement('button');
+                                    copyButton.classList.add('copy-button');
+                                    copyButton.textContent = '复制';
+                                    copyButton.onclick = function() { copyMessageContent(this); };
+                                    currentStreamingMessage.appendChild(copyButton);
                                 }
 
                                 scrollToBottom();
@@ -964,6 +1318,16 @@
             }
 
             messageElement.textContent = text;
+            
+            // 为用户消息和助手消息添加复制按钮（系统消息和错误消息不添加）
+            if (type === 'user' || type === 'bot') {
+                const copyButton = document.createElement('button');
+                copyButton.classList.add('copy-button');
+                copyButton.textContent = '复制';
+                copyButton.onclick = function() { copyMessageContent(this); };
+                messageElement.appendChild(copyButton);
+            }
+            
             chatContainer.appendChild(messageElement);
             scrollToBottom();
         }
@@ -986,7 +1350,17 @@
                 if (data.success) {
                     // 清空聊天界面，只保留欢迎消息
                     chatContainer.innerHTML = '';
-                    addMessage('您好！我是法律小助手，请问有什么法律问题需要咨询吗？', 'bot');
+                    const welcomeMessage = document.createElement('div');
+                    welcomeMessage.classList.add('message', 'bot-message');
+                    welcomeMessage.textContent = '您好！我是法律小助手，请问有什么法律问题需要咨询吗？';
+                    
+                    const copyButton = document.createElement('button');
+                    copyButton.classList.add('copy-button');
+                    copyButton.textContent = '复制';
+                    copyButton.onclick = function() { copyMessageContent(this); };
+                    welcomeMessage.appendChild(copyButton);
+                    
+                    chatContainer.appendChild(welcomeMessage);
                     addMessage('对话历史已清空', 'system');
                 }
             })
