@@ -525,4 +525,4 @@ def predict():
 # --- 5. 启动服务 (保持不变) ---
 if __name__ == '__main__':
     print("刑事咨询小助手后端服务(流式版)已启动，监听地址 [http://0.0.0.0:5000](http://0.0.0.0:5000)")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False)

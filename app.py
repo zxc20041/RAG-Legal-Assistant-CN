@@ -1,17 +1,53 @@
 from flask import Flask, render_template, request, jsonify, session, Response, stream_with_context
+from flask_session import Session  # 新增导入
 import requests
 import json
 import faiss
 from sentence_transformers import SentenceTransformer
+import os
+import uuid
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = 'legal_assistant_secret_key233'
+
+# 配置服务器端会话存储
+app.config['SESSION_TYPE'] = 'filesystem'  # 使用文件系统存储会话
+app.config['SESSION_FILE_DIR'] = './flask_session'  # 会话文件存储目录
+app.config['SESSION_PERMANENT'] = False  # 会话非永久
+app.config['SESSION_USE_SIGNER'] = True  # 对会话ID进行签名
+app.config['SESSION_KEY_PREFIX'] = 'legal_assistant:'  # 键前缀
+
+# 初始化Flask-Session
+Session(app)
 
 # 后端API服务的完整地址
 API_URL = "http://127.0.0.1:5000/predict"
 
 # 全局变量，用于存储检索系统组件
 retrieval_system = None
+
+# 对话历史存储（替代session存储）
+# 在实际生产环境中，应该使用数据库，这里使用内存字典作为演示
+conversation_storage = {}
+
+def get_conversation_history(session_id):
+    """从存储中获取对话历史"""
+    return conversation_storage.get(session_id, [])
+
+def save_conversation_history(session_id, history):
+    """保存对话历史到存储"""
+    # 限制历史记录长度（可选，防止内存占用过大）
+    if len(history) > 50:  # 最多保存50轮对话
+        history = history[-50:]
+    conversation_storage[session_id] = history
+    print(f"对话历史已保存 - 会话ID: {session_id}, 消息数: {len(history)}")
+
+def clear_conversation_history(session_id):
+    """清空指定会话的对话历史"""
+    if session_id in conversation_storage:
+        del conversation_storage[session_id]
+    print(f"对话历史已清空 - 会话ID: {session_id}")
 
 class LegalCaseRetriever:
     """法律案件检索器"""
@@ -121,86 +157,22 @@ def initialize_retrieval_system():
         print(f"检索系统初始化失败: {e}")
         return False
 
-# 修改 handle_judge_request 和 handle_streaming_request 函数中的历史更新部分
-# 添加对话历史大小限制 (3KB = 3072 bytes)
-MAX_HISTORY_SIZE = 3072
-
-def trim_conversation_history(history):
-    """修剪对话历史，确保总大小不超过 MAX_HISTORY_SIZE"""
-    if not history:
-        return history
-
-    # 计算当前历史的总大小
-    def calculate_size(hist):
-        return len(json.dumps(hist, ensure_ascii=False).encode('utf-8'))
-
-    current_size = calculate_size(history)
-    original_count = len(history)
-
-    # 如果已经在限制内，直接返回
-    if current_size <= MAX_HISTORY_SIZE:
-        print(f"对话历史已保存: {len(history)} 条消息, 大小: {current_size} bytes")
-        return history
-
-    # 从最旧的消息开始删除，直到大小在限制内
-    trimmed_history = history.copy()
-    while trimmed_history and calculate_size(trimmed_history) > MAX_HISTORY_SIZE:
-        # 优先删除最旧的消息（列表开头的消息）
-        removed_msg = trimmed_history.pop(0)
-        print(f"删除旧消息: {removed_msg.get('role', 'unknown')} - {removed_msg.get('content', '')[:50]}...")
-
-    final_size = calculate_size(trimmed_history)
-    final_count = len(trimmed_history)
-    print(f"对话历史修剪完成: {original_count} -> {final_count} 条消息, {current_size} -> {final_size} bytes")
-
-    return trimmed_history
-
-def smart_trim_conversation_history(history, new_messages=None):
-    """智能修剪对话历史，添加新消息后确保不超过大小限制"""
-    if new_messages:
-        # 临时添加新消息来计算总大小
-        temp_history = history + new_messages
-    else:
-        temp_history = history
-
-    # 计算总大小
-    def calculate_size(hist):
-        return len(json.dumps(hist, ensure_ascii=False).encode('utf-8'))
-
-    current_size = calculate_size(temp_history)
-    original_count = len(temp_history)
-
-    # 如果已经在限制内，直接返回
-    if current_size <= MAX_HISTORY_SIZE:
-        print(f"对话历史已保存: {len(temp_history)} 条消息, 大小: {current_size} bytes")
-        return temp_history
-
-    # 需要修剪，优先保留最新的对话
-    trimmed_history = temp_history.copy()
-
-    # 计算需要删除的消息数量（从最旧的开始）
-    while trimmed_history and calculate_size(trimmed_history) > MAX_HISTORY_SIZE:
-        # 删除最旧的消息
-        removed_msg = trimmed_history.pop(0)
-        print(f"删除旧消息: {removed_msg.get('role', 'unknown')} - {removed_msg.get('content', '')[:50]}...")
-
-    final_size = calculate_size(trimmed_history)
-    final_count = len(trimmed_history)
-    print(f"对话历史修剪完成: {original_count} -> {final_count} 条消息, {current_size} -> {final_size} bytes")
-
-    return trimmed_history
-
 @app.route('/')
 def index():
     """主页面"""
-    if 'conversation_history' not in session:
-        session['conversation_history'] = []
+    # 生成或获取会话ID
+    if 'session_id' not in session:
+        session['session_id'] = str(uuid.uuid4())
+        print(f"创建新会话: {session['session_id']}")
+
+    # 初始化会话数据
     if 'selected_model' not in session:
         session['selected_model'] = 'deepseek'  # 默认模型
     if 'rag_enabled' not in session:
         session['rag_enabled'] = True  # 默认开启RAG
     if 'disclaimer_accepted' not in session:
         session['disclaimer_accepted'] = False  # 免责声明未接受
+
     return render_template('index.html')
 
 @app.route('/accept_disclaimer', methods=['POST'])
@@ -230,8 +202,9 @@ def send_message():
         if not user_message:
             return jsonify({'error': '消息不能为空'}), 400
 
-        # 从session中获取对话历史
-        conversation_history = session.get('conversation_history', [])
+        # 从存储中获取对话历史
+        session_id = session.get('session_id')
+        conversation_history = get_conversation_history(session_id)
 
         # 确定使用的RAG数据
         current_rag_data = []
@@ -256,15 +229,15 @@ def send_message():
 
         # 对于judge模型，使用非流式请求
         if selected_model == 'judge':
-            return handle_judge_request(payload, headers, conversation_history, user_message)
+            return handle_judge_request(payload, headers, conversation_history, user_message, session_id)
         else:
             # 对于其他模型，使用流式请求
-            return handle_streaming_request(payload, headers, conversation_history, user_message)
+            return handle_streaming_request(payload, headers, conversation_history, user_message, session_id)
 
     except Exception as e:
         return jsonify({'error': f'处理请求时出错: {str(e)}'}), 500
 
-def handle_judge_request(payload, headers, conversation_history, user_message):
+def handle_judge_request(payload, headers, conversation_history, user_message, session_id):
     """处理Judge模型的非流式请求"""
     try:
         response = requests.post(API_URL, headers=headers, json=payload, timeout=120)
@@ -277,13 +250,10 @@ def handle_judge_request(payload, headers, conversation_history, user_message):
             judge_reasoning = result.get("judge_reasoning", "")
             all_answers = result.get("all_answers", {})
 
-            # 更新对话历史（使用智能修剪）
-            new_messages = [
-                {"role": "user", "content": user_message},
-                {"role": "assistant", "content": assistant_response}
-            ]
-            conversation_history = smart_trim_conversation_history(conversation_history, new_messages)
-            session['conversation_history'] = conversation_history
+            # 更新对话历史
+            conversation_history.append({"role": "user", "content": user_message})
+            conversation_history.append({"role": "assistant", "content": assistant_response})
+            save_conversation_history(session_id, conversation_history)
 
             return jsonify({
                 'response': assistant_response,
@@ -300,10 +270,9 @@ def handle_judge_request(payload, headers, conversation_history, user_message):
     except requests.exceptions.RequestException as e:
         return jsonify({'error': f'网络请求错误: {str(e)}'}), 500
 
-def handle_streaming_request(payload, headers, conversation_history, user_message):
+def handle_streaming_request(payload, headers, conversation_history, user_message, session_id):
     """处理流式请求"""
     def generate():
-        nonlocal conversation_history
         full_response = ""
         model_used = ""
         stream_had_error = False
@@ -322,13 +291,10 @@ def handle_streaming_request(payload, headers, conversation_history, user_messag
                     elif line.startswith("event: end_of_stream"):
                         # 流结束
                         if full_response and not stream_had_error:
-                            # 更新对话历史（使用智能修剪）
-                            new_messages = [
-                                {"role": "user", "content": user_message},
-                                {"role": "assistant", "content": full_response}
-                            ]
-                            conversation_history = smart_trim_conversation_history(conversation_history, new_messages)
-                            session['conversation_history'] = conversation_history
+                            # 更新对话历史
+                            conversation_history.append({"role": "user", "content": user_message})
+                            conversation_history.append({"role": "assistant", "content": full_response})
+                            save_conversation_history(session_id, conversation_history)
 
                         yield f"data: {json.dumps({'event': 'end_of_stream', 'full_response': full_response})}\n\n"
                         break
@@ -372,20 +338,21 @@ def toggle_rag():
 @app.route('/cancel_request', methods=['POST'])
 def cancel_request():
     """取消当前请求"""
-    # 这里可以添加取消逻辑，但目前Flask的流式响应一旦开始就无法从服务器端取消
-    # 主要取消逻辑在前端实现
     return jsonify({'success': True, 'message': '取消请求已发送'})
 
 @app.route('/clear_history', methods=['POST'])
 def clear_history():
     """清空对话历史"""
-    session['conversation_history'] = []
+    session_id = session.get('session_id')
+    if session_id:
+        clear_conversation_history(session_id)
     return jsonify({'success': True, 'message': '对话历史已清空'})
 
 @app.route('/get_history', methods=['GET'])
 def get_history():
     """获取当前对话历史"""
-    conversation_history = session.get('conversation_history', [])
+    session_id = session.get('session_id')
+    conversation_history = get_conversation_history(session_id)
     return jsonify({'history': conversation_history})
 
 @app.route('/set_model', methods=['POST'])
@@ -408,6 +375,10 @@ def retrieval_status():
         })
 
 if __name__ == '__main__':
+    # 确保会话目录存在
+    if not os.path.exists('./flask_session'):
+        os.makedirs('./flask_session')
+
     # 启动时初始化检索系统
     print("正在启动法律小助手Web应用...")
     if not LegalCaseRetriever.model_loaded:
