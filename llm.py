@@ -72,7 +72,7 @@ SYSTEM_PROMPT_NORMAL = """
     * (当触发 Phase 2 时，仅输出以下内容。你必须严格遵守【规则4】的“聊天”和“禁止列表”要求)
     * **(步骤1：表明模型)** "您好，我是[你的模型名称]。"
     * **(步骤2：给个底)** (例如：‘哎呀，您说的这个事儿，听起来**还挺麻烦的**，风险不低啊...我感觉这事儿**最可能沾上的是“盗窃”**...**现在最要命的就是**这个金额已经过了5000...’)
-    * **(步骤3：给建议)** (例如：‘...所以呀...**您现在最要jǐn的是**，赶紧先去确认一下他是不是真的被抓了...马上去找个靠谱的律师...’)
+    * **(步骤3：给建议)** (例如：‘...所以呀...**您现在最要紧的是**，赶紧先去确认一下他是不是真的被抓了...马上去找个靠谱的律师...’)
     * **(步骤4：问问题)** (例如：‘...您看您下次能不能再详细说说，**比如**：他这是**第几次**这么干了？是**自己进去**偷的，还是咋回事？...’)
     * **(步骤5：询问报告)** (例如："...该说的就是这些。**哦对了，我刚帮您分析的这些，您需不需要我给您出一份特别详细、专业的《案件初步研判报告》？**")
 
@@ -97,7 +97,7 @@ SYSTEM_PROMPT_NORMAL = """
     
     **3. 量刑预测分析 (Sentencing Prediction)**
     - **法定刑罚基准**: (例如：盗窃5000元，属“数额较大”，法定刑为三年以下有期徒刑、拘役或管制)
-    - **RAG案例参考**: (例如：检索到的X个相似案例中，刑期范围在X至Y个月)
+    - **RAG案例参考**: (忽略本次检索到的内容。请特别注意：要结合历史检索案例进行分析，不能只关注当前检索结果。例如：之前分析中引述X个相似案例中，刑期范围在X至Y个月。)
     - **加重情节 (Aggravating Factors)**: (例如：入室、累犯、暴力威胁等 - 如果存在)
     - **从轻/减免情节 (Mitigating Factors)**: (例如：自首、立功、积极赔偿、取得谅解、初犯/偶犯 - 如果存在)
     - **综合预测结果**: (例如：综合上述因素，预估刑期在 [X] 个月至 [Y] 个月之间，并可能处罚金 [X] 元)
@@ -231,7 +231,7 @@ SYSTEM_PROMPT_PROFESSIONAL = """
     
     **3. 量刑预测分析 (Sentencing Prediction)**
     - **法定刑罚基准**: (例如：盗窃5000元，属“数额较大”，法定刑为三年以下有期徒刑、拘役或管制)
-    - **RAG案例参考**: (例如：检索到的X个相似案例中，刑期范围在X至Y个月)
+    - **RAG案例参考**: (忽略本次检索到的内容。请特别注意：要结合历史检索案例进行分析，不能只关注当前检索结果。例如：之前分析中引述X个相似案例中，刑期范围在X至Y个月。)
     - **加重情节 (Aggravating Factors)**: (例如：入室、累犯、暴力威胁等 - 如果存在)
     - **从轻/减免情节 (Mitigating Factors)**: (例如：自首、立功、积极赔偿、取得谅解、初犯/偶犯 - 如果存在)
     - **综合预测结果**: (例如：综合上述因素，预估刑期在 [X] 个月至 [Y] 个月之间，并可能处罚金 [X] 元)
@@ -312,27 +312,66 @@ JSON格式必须如下:
 }}
 """
 
-def format_rag_data_for_prompt(rag_data):
-    # (这个函数完全不变，此处省略)
+def format_rag_data_for_prompt(rag_data, historical_rag_data=None):
+    """格式化RAG数据用于提示词，包括当前检索和历史检索的案例"""
+    current_cases_text = ""
+    historical_cases_text = ""
+
+    # 格式化当前检索的案例
     if not rag_data:
-        return "本轮未检索到强相关的历史案例。"
-    formatted_cases = []
-    for i, item in enumerate(rag_data, 1):
-        fact = item.get("fact", "N/A")
-        meta = item.get("meta", {})
-        accusation = "、".join(meta.get("accusation", ["N/A"]))
-        articles = "、".join(map(str, meta.get("relevant_articles", ["N/A"])))
-        imprisonment_months = meta.get("term_of_imprisonment", {}).get("imprisonment", "未披露")
-        money_penalty = meta.get("punish_of_money", "未披露")
-        case_str = f"""
-【相似案例{i}】
+        current_cases_text = "本轮未检索到强相关的历史案例。"
+    else:
+        formatted_cases = []
+        for i, item in enumerate(rag_data, 1):
+            fact = item.get("fact", "N/A")
+            meta = item.get("meta", {})
+            accusation = "、".join(meta.get("accusation", ["N/A"]))
+            articles = "、".join(map(str, meta.get("relevant_articles", ["N/A"])))
+            imprisonment_months = meta.get("term_of_imprisonment", {}).get("imprisonment", "未披露")
+            money_penalty = meta.get("punish_of_money", "未披露")
+            case_str = f"""
+【当前检索案例{i}】
 - 案情概要: {fact}
 - 罪名: {accusation}
 - 相关法条: 《中华人民共和国刑法》第{articles}条
 - 判罚结果: 判处有期刑{imprisonment_months}个月，罚金{money_penalty}元。
 """
-        formatted_cases.append(case_str)
-    return "\n".join(formatted_cases)
+            formatted_cases.append(case_str)
+        current_cases_text = "\n".join(formatted_cases)
+
+    # 格式化历史检索的案例
+    if historical_rag_data:
+        formatted_historical_cases = []
+        for i, item in enumerate(historical_rag_data, 1):
+            fact = item.get("fact", "N/A")
+            accusation = "、".join(item.get("accusation", ["N/A"]))
+            articles = "、".join(map(str, item.get("articles", ["N/A"])))
+            imprisonment_months = item.get("imprisonment", "未披露")
+            money_penalty = item.get("fine", "未披露")
+            related_query = item.get("related_query", "未知查询")
+
+            case_str = f"""
+【历史相关案例{i}】(来自之前对话)
+- 相关查询: {related_query}
+- 案情概要: {fact}
+- 罪名: {accusation}
+- 相关法条: 《中华人民共和国刑法》第{articles}条
+- 判罚结果: 判处有期刑{imprisonment_months}个月，罚金{money_penalty}元。
+"""
+            formatted_historical_cases.append(case_str)
+        historical_cases_text = "\n".join(formatted_historical_cases)
+    else:
+        historical_cases_text = "无相关历史检索案例可供参考。"
+
+    # 组合当前检索案例和历史检索案例
+    combined_text = f"""
+【系统当前检索到的相似历史案例】
+{current_cases_text}
+
+【系统历史检索的相关案例参考】
+{historical_cases_text}
+"""
+    return combined_text
 
 
 # --- 3. 核心辅助函数 (保持不变) ---
@@ -379,6 +418,7 @@ def call_model_sync(model_id, messages):
 # ===================================================================
 # --- 4. API接口定义 (已重构，支持专业模式) ---
 # ===================================================================
+# 修改 /predict 路由中的消息构造部分
 @app.route('/predict', methods=['POST'])
 def predict():
     data = request.json
@@ -388,22 +428,21 @@ def predict():
     # 4.1 提取通用数据
     user_question = data['user_question']
     rag_data = data.get('rag_data', [])
+    historical_rag_data = data.get('historical_rag_data', [])  # 新增：历史检索案例
     chat_history = data.get('chat_history', [])
     model_id = data.get('model_id', 'deepseek')
-    
-    # (新增) 获取专业模式开关，默认为 False (普通模式)
+
     is_professional = data.get('is_professional_mode', False)
-    
-    # (新增) 根据开关选择系统提示词
     selected_system_prompt = SYSTEM_PROMPT_PROFESSIONAL if is_professional else SYSTEM_PROMPT_NORMAL
-    
+
     # 4.2 准备基础消息 (所有模型通用)
-    rag_text = format_rag_data_for_prompt(rag_data)
+    # 修改：传入历史检索案例数据
+    rag_text = format_rag_data_for_prompt(rag_data, historical_rag_data)
+
     messages_for_llm = [
-        # (修改) 使用选择的提示词
         {"role": "system", "content": selected_system_prompt},
         *chat_history,
-        {"role": "user", "content": f"**【系统检索到的相似历史案例】**\n{rag_text}\n\n**【用户本轮提问】**\n{user_question}\n\n请根据以上信息、结合历史对话，回答我的问题。"}
+        {"role": "user", "content": f"**【系统检索信息】**\n{rag_text}\n\n**【用户本轮提问】**\n{user_question}\n\n请根据以上信息、结合历史对话，回答我的问题。"}
     ]
 
     # ===================================================================

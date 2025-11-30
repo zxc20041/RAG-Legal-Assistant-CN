@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>法律小助手</title>
-    <!-- 引入marked.js用于Markdown渲染 -->
-    <!-- 引入highlight.js用于代码高亮 -->
-    <!-- 替换为国内CDN -->
-    <script src="https://cdn.bootcdn.net/ajax/libs/marked/4.0.2/marked.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
-    <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+
+    <!-- 使用本地资源 -->
+    <script src="{{ url_for('static', filename='js/marked.min.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/github.min.css') }}">
+    <script src="{{ url_for('static', filename='js/highlight.min.js') }}"></script>
+
     <style>
         * {
             margin: 0;
@@ -22,16 +22,116 @@
             background-color: #f5f5f5;
             color: #333;
             line-height: 1.6;
+            display: flex;
+            height: 100vh;
         }
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
+        /* 侧边栏样式 */
+        .sidebar {
+            width: 300px;
+            background-color: #2c3e50;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #34495e;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+
+        .new-chat-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .conversations-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .conversation-item {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background-color: #34495e;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .conversation-item:hover {
+            background-color: #3d566e;
+        }
+
+        .conversation-item.active {
+            background-color: #3498db;
+        }
+
+        .conversation-title {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.9rem;
+        }
+
+        .conversation-delete {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .conversation-delete:hover {
+            opacity: 1;
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+
+        .sidebar-footer {
+            padding: 15px;
+            border-top: 1px solid #34495e;
+            font-size: 0.8rem;
+            color: #bdc3c7;
+            text-align: center;
+        }
+
+        /* 主容器样式 */
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
             background-color: white;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             height: 100vh;
-            display: flex;
-            flex-direction: column;
         }
 
         .header {
@@ -165,6 +265,7 @@
             word-wrap: break-word;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
             position: relative;
+            white-space: pre-wrap;
         }
 
         .user-message {
@@ -177,11 +278,6 @@
             background-color: #f1f1f1;
             align-self: flex-start;
             border-bottom-left-radius: 5px;
-        }
-
-        .bot-message.markdown-content {
-            background-color: white;
-            border: 1px solid #e9ecef;
         }
 
         .system-message {
@@ -298,12 +394,13 @@
         }
 
         .judge-reasoning {
-            background-color: #fff3cd;
-            border-left: 4px solid #ffc107;
+            background-color: #e8f4fd;
+            border-left: 4px solid #2196F3;
             padding: 10px 15px;
-            margin-top: 10px;
+            margin: 10px 0;
             font-size: 0.9rem;
-            color: #856404;
+            color: #2c3e50;
+            border-radius: 0 4px 4px 0;
         }
 
         /* 复制按钮样式 */
@@ -334,6 +431,43 @@
         .copy-button.copied {
             background-color: #28a745;
             color: white;
+        }
+
+        /* Judge模式选择器样式 */
+        .judge-selector {
+            margin: 10px 0;
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        .model-select-label {
+            font-weight: bold;
+            color: #495057;
+            margin-right: 10px;
+        }
+
+        .model-select {
+            padding: 5px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background-color: white;
+            font-size: 0.9rem;
+        }
+
+        .model-select:focus {
+            outline: none;
+            border-color: #2196F3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+        }
+
+        .model-response {
+            display: none;
+        }
+
+        .model-response.active {
+            display: block;
         }
 
         /* 免责声明弹窗样式 */
@@ -407,115 +541,31 @@
             background-color: #1a252f;
         }
 
-        /* Markdown样式 */
-        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
-            margin-top: 1rem;
-            margin-bottom: 0.5rem;
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 250px;
+            }
+            
+            .main-container {
+                width: calc(100% - 250px);
+            }
         }
 
-        .markdown-content p {
-            margin-bottom: 0.5rem;
-        }
-
-        .markdown-content ul, .markdown-content ol {
-            margin-left: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .markdown-content blockquote {
-            border-left: 4px solid #ddd;
-            padding-left: 1rem;
-            margin-left: 0;
-            color: #666;
-        }
-
-        .markdown-content code {
-            background-color: #f8f9fa;
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-family: 'Courier New', monospace;
-        }
-
-        .markdown-content pre {
-            background-color: #f8f9fa;
-            padding: 1rem;
-            border-radius: 5px;
-            overflow-x: auto;
-            margin: 0.5rem 0;
-        }
-
-        .markdown-content table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 0.5rem 0;
-        }
-
-        .markdown-content th, .markdown-content td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-
-        .markdown-content th {
-            background-color: #f2f2f2;
-        }
-
-        /* Judge模式选择器样式 */
-        .judge-selector {
-            margin: 10px 0;
-            padding: 8px 12px;
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-        }
-
-        .model-select-label {
-            font-weight: bold;
-            color: #495057;
-            margin-right: 10px;
-        }
-
-        .model-select {
-            padding: 5px 10px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            background-color: white;
-            font-size: 0.9rem;
-        }
-
-        .model-select:focus {
-            outline: none;
-            border-color: #2196F3;
-            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
-        }
-
-        .judge-reasoning {
-            background-color: #e8f4fd;
-            border-left: 4px solid #2196F3;
-            padding: 10px 15px;
-            margin: 10px 0;
-            font-size: 0.9rem;
-            color: #2c3e50;
-            border-radius: 0 4px 4px 0;
-        }
-
-        .model-response {
-            display: none;
-        }
-
-        .model-response.active {
-            display: block;
-        }
-
-        .best-answer-badge {
-            display: inline-block;
-            background-color: #28a745;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            margin-left: 8px;
-            font-weight: bold;
+        @media (max-width: 576px) {
+            body {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 40vh;
+            }
+            
+            .main-container {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -549,12 +599,27 @@
     </div>
 </div>
 
-<div class="container" id="main-container" style="display: none;">
+<!-- 侧边栏 -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h2>法律小助手</h2>
+        <button class="new-chat-btn" id="new-chat-btn">+ 新对话</button>
+    </div>
+    <div class="conversations-list" id="conversations-list">
+        <!-- 对话列表将在这里动态生成 -->
+    </div>
+    <div class="sidebar-footer">
+        法律咨询服务 v1.0
+    </div>
+</div>
+
+<!-- 主聊天区域 -->
+<div class="main-container" id="main-container" style="display: none;">
     <div class="header">
-        <h1>法律小助手</h1>
+        <h1 id="current-conversation-title">法律小助手</h1>
         <div class="header-actions">
             <button class="header-button" id="clear-history">清空记录</button>
-            <button class="header-button" id="view-history">查看历史</button>
+            <!-- 已删除查看历史按钮 -->
         </div>
     </div>
 
@@ -695,31 +760,26 @@
         });
     }
 
-
-
     // 复制Judge模式消息内容的函数
     function copyJudgeMessageContent(button, contentElement) {
         let textToCopy = '';
-
+        
         if (contentElement) {
             // 获取原始文本内容（去除HTML标签）
             const clone = contentElement.cloneNode(true);
-            const modelInfo = clone.querySelector('.model-info');
-            if (modelInfo) modelInfo.remove();
-
             textToCopy = clone.textContent || clone.innerText;
         }
-
+        
         // 清理文本
         textToCopy = textToCopy.replace(/\s+/g, ' ').trim();
-
+        
         // 使用Clipboard API复制文本
         navigator.clipboard.writeText(textToCopy).then(() => {
             // 显示复制成功反馈
             const originalText = button.textContent;
             button.textContent = '已复制!';
             button.classList.add('copied');
-
+            
             // 2秒后恢复原状
             setTimeout(() => {
                 button.textContent = originalText;
@@ -737,7 +797,7 @@
                 const originalText = button.textContent;
                 button.textContent = '已复制!';
                 button.classList.add('copied');
-
+                
                 setTimeout(() => {
                     button.textContent = originalText;
                     button.classList.remove('copied');
@@ -750,7 +810,6 @@
         });
     }
 
-
     document.addEventListener('DOMContentLoaded', function() {
         const disclaimerModal = document.getElementById('disclaimer-modal');
         const mainContainer = document.getElementById('main-container');
@@ -761,19 +820,22 @@
         const cancelButton = document.getElementById('cancel-button');
         const typingIndicator = document.getElementById('typing-indicator');
         const clearHistoryBtn = document.getElementById('clear-history');
-        const viewHistoryBtn = document.getElementById('view-history');
         const modelSelect = document.getElementById('model-select');
         const professionalMode = document.getElementById('professional-mode');
         const ragToggle = document.getElementById('rag-toggle');
         const ragStatus = document.getElementById('rag-status');
         const currentModelInfo = document.getElementById('current-model-info');
+        const newChatBtn = document.getElementById('new-chat-btn');
+        const conversationsList = document.getElementById('conversations-list');
+        const currentConversationTitle = document.getElementById('current-conversation-title');
 
         let currentStreamingMessage = null;
         let currentFullResponse = '';
         let currentModelUsed = '';
-        let currentReader = null; // 用于存储当前流的reader，以便取消
-        let currentAbortController = null; // 用于取消请求
-        let disclaimerAccepted = false; // 免责声明接受状态
+        let currentReader = null;
+        let currentAbortController = null;
+        let disclaimerAccepted = false;
+        let currentConversationId = null;
 
         // 显示Judge模式消息的函数
         function displayJudgeMessage(data) {
@@ -897,10 +959,178 @@
             scrollToBottom();
         }
 
+        // 加载对话列表
+        function loadConversations() {
+            fetch('/conversations')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.conversations) {
+                        renderConversations(data.conversations);
+                    }
+                })
+                .catch(error => {
+                    console.error('加载对话列表失败:', error);
+                });
+        }
+
+        // 渲染对话列表
+        function renderConversations(conversations) {
+            conversationsList.innerHTML = '';
+            
+            conversations.forEach(conv => {
+                const conversationItem = document.createElement('div');
+                conversationItem.classList.add('conversation-item');
+                if (conv.is_current) {
+                    conversationItem.classList.add('active');
+                    currentConversationId = conv.id;
+                    currentConversationTitle.textContent = conv.title;
+                }
+                
+                conversationItem.innerHTML = `
+                    <span class="conversation-title">${conv.title}</span>
+                    <button class="conversation-delete" data-id="${conv.id}">×</button>
+                `;
+                
+                // 点击切换对话
+                conversationItem.addEventListener('click', function(e) {
+                    if (!e.target.classList.contains('conversation-delete')) {
+                        switchConversation(conv.id);
+                    }
+                });
+                
+                // 删除对话按钮
+                const deleteBtn = conversationItem.querySelector('.conversation-delete');
+                deleteBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    deleteConversation(conv.id);
+                });
+                
+                conversationsList.appendChild(conversationItem);
+            });
+        }
+
+        // 切换对话
+        function switchConversation(conversationId) {
+            fetch(`/conversations/${conversationId}/switch`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 重新加载对话列表
+                    loadConversations();
+                    
+                    // 清空当前聊天界面并加载新对话的历史
+                    chatContainer.innerHTML = '';
+                    
+                    if (data.current_conversation && data.current_conversation.history.length > 0) {
+                        // 加载对话历史
+                        data.current_conversation.history.forEach(msg => {
+                            if (msg.role === 'user') {
+                                addMessage(msg.content, 'user');
+                            } else if (msg.role === 'assistant') {
+                                // 这里需要根据消息内容判断是否是Judge模式的消息
+                                // 简化处理：直接显示为普通消息
+                                const messageElement = document.createElement('div');
+                                messageElement.classList.add('message', 'bot-message', 'markdown-content');
+                                messageElement.innerHTML = marked.parse(msg.content);
+                                
+                                const copyButton = document.createElement('button');
+                                copyButton.classList.add('copy-button');
+                                copyButton.textContent = '复制';
+                                copyButton.onclick = function() { copyMessageContent(this); };
+                                messageElement.appendChild(copyButton);
+                                
+                                chatContainer.appendChild(messageElement);
+                            }
+                        });
+                    } else {
+                        // 显示欢迎消息
+                        const welcomeMessage = document.createElement('div');
+                        welcomeMessage.classList.add('message', 'bot-message');
+                        welcomeMessage.textContent = '您好！我是法律小助手，请问有什么法律问题需要咨询吗？';
+                        
+                        const copyButton = document.createElement('button');
+                        copyButton.classList.add('copy-button');
+                        copyButton.textContent = '复制';
+                        copyButton.onclick = function() { copyMessageContent(this); };
+                        welcomeMessage.appendChild(copyButton);
+                        
+                        chatContainer.appendChild(welcomeMessage);
+                    }
+                    
+                    scrollToBottom();
+                }
+            })
+            .catch(error => {
+                console.error('切换对话失败:', error);
+            });
+        }
+
+        // 删除对话
+        function deleteConversation(conversationId) {
+            if (confirm('确定要删除这个对话吗？')) {
+                fetch(`/conversations/${conversationId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadConversations();
+                    }
+                })
+                .catch(error => {
+                    console.error('删除对话失败:', error);
+                });
+            }
+        }
+
+        // 创建新对话
+        function createNewConversation() {
+            fetch('/conversations/new', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({title: '新对话'})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 重新加载对话列表
+                    loadConversations();
+                    
+                    // 清空聊天界面
+                    chatContainer.innerHTML = '';
+                    
+                    // 显示欢迎消息
+                    const welcomeMessage = document.createElement('div');
+                    welcomeMessage.classList.add('message', 'bot-message');
+                    welcomeMessage.textContent = '您好！我是法律小助手，请问有什么法律问题需要咨询吗？';
+                    
+                    const copyButton = document.createElement('button');
+                    copyButton.classList.add('copy-button');
+                    copyButton.textContent = '复制';
+                    copyButton.onclick = function() { copyMessageContent(this); };
+                    welcomeMessage.appendChild(copyButton);
+                    
+                    chatContainer.appendChild(welcomeMessage);
+                    scrollToBottom();
+                }
+            })
+            .catch(error => {
+                console.error('创建新对话失败:', error);
+            });
+        }
+
         // 检查是否已经接受过免责声明
         function checkDisclaimerStatus() {
-            // 这里可以添加从localStorage或服务器检查状态的逻辑
-            // 暂时默认未接受，显示弹窗
             disclaimerModal.classList.add('active');
             mainContainer.style.display = 'none';
         }
@@ -919,14 +1149,19 @@
                     disclaimerAccepted = true;
                     disclaimerModal.classList.remove('active');
                     mainContainer.style.display = 'flex';
+                    
+                    // 加载对话列表
+                    loadConversations();
                 }
             })
             .catch(error => {
                 console.error('接受免责声明失败:', error);
-                // 即使请求失败，也允许用户继续使用
                 disclaimerAccepted = true;
                 disclaimerModal.classList.remove('active');
                 mainContainer.style.display = 'flex';
+                
+                // 加载对话列表
+                loadConversations();
             });
         }
 
@@ -958,7 +1193,6 @@
             ragStatus.style.color = isEnabled ? '#28a745' : '#dc3545';
             updateModelInfo();
 
-            // 保存RAG设置到服务器
             fetch('/toggle_rag', {
                 method: 'POST',
                 headers: {
@@ -980,22 +1214,14 @@
                 currentReader = null;
             }
 
-            // 隐藏"正在输入"指示器
             typingIndicator.classList.remove('active');
-
-            // 隐藏取消按钮
             cancelButton.style.display = 'none';
-
-            // 重新启用发送按钮
             sendButton.disabled = false;
-
-            // 添加取消消息
             addMessage('思考已取消', 'system');
         }
 
         // 发送消息函数
         function sendMessage() {
-            // 检查是否已接受免责声明
             if (!disclaimerAccepted) {
                 addMessage('请先阅读并接受免责声明', 'error');
                 return;
@@ -1004,36 +1230,22 @@
             const message = userInput.value.trim();
             if (!message) return;
 
-            // 添加用户消息到聊天界面
             addMessage(message, 'user');
-
-            // 清空输入框
             userInput.value = '';
-
-            // 禁用发送按钮
             sendButton.disabled = true;
-
-            // 显示"正在输入"指示器
             typingIndicator.classList.add('active');
-
-            // 显示取消按钮
             cancelButton.style.display = 'block';
 
-            // 重置流式消息状态
             currentStreamingMessage = null;
             currentFullResponse = '';
             currentModelUsed = '';
             currentReader = null;
-
-            // 创建AbortController用于取消请求
             currentAbortController = new AbortController();
 
-            // 获取当前设置
             const selectedModel = modelSelect.value;
             const isProfessionalMode = professionalMode.checked;
             const isRagEnabled = ragToggle.checked;
 
-            // 保存模型设置
             fetch('/set_model', {
                 method: 'POST',
                 headers: {
@@ -1042,9 +1254,7 @@
                 body: JSON.stringify({model: selectedModel})
             });
 
-            // 发送请求到后端
             if (selectedModel === 'judge') {
-                // Judge模式使用非流式请求
                 fetch('/send_message', {
                     method: 'POST',
                     headers: {
@@ -1065,14 +1275,10 @@
                     return response.json();
                 })
                 .then(data => {
-                    // 隐藏"正在输入"指示器和取消按钮
                     typingIndicator.classList.remove('active');
                     cancelButton.style.display = 'none';
                     currentAbortController = null;
 
-                    // 处理响应
-                    // 在sendMessage函数中，修改Judge模式的处理部分
-                    // 找到Judge模式的成功回调，替换为：
                     if (data.response) {
                         if (data.should_exit) {
                             addMessage(data.response, 'system');
@@ -1112,38 +1318,30 @@
                                 chatContainer.appendChild(messageElement);
                             }
                         }
-                    }
-                    else if (data.error) {
+                    } else if (data.error) {
                         addMessage('错误: ' + data.error, 'error');
                     }
 
-                    // 重新启用发送按钮
                     sendButton.disabled = false;
-
-                    // 滚动到最新消息
                     scrollToBottom();
+                    
+                    // 重新加载对话列表以更新标题
+                    loadConversations();
                 })
                 .catch(error => {
-                    // 隐藏"正在输入"指示器和取消按钮
                     typingIndicator.classList.remove('active');
                     cancelButton.style.display = 'none';
                     currentAbortController = null;
 
-                    // 如果是取消请求，则不显示错误
                     if (error.name === 'AbortError') {
                         return;
                     }
 
-                    // 显示错误消息
                     addMessage('网络错误: ' + error.message, 'error');
-
-                    // 重新启用发送按钮
                     sendButton.disabled = false;
-
                     console.error('Error:', error);
                 });
             } else {
-                // 其他模型使用流式请求
                 fetch('/send_message', {
                     method: 'POST',
                     headers: {
@@ -1167,20 +1365,17 @@
 
                     function readStream() {
                         return currentReader.read().then(({ done, value }) => {
-                            // 检查是否已取消
                             if (currentAbortController && currentAbortController.signal.aborted) {
                                 return;
                             }
 
                             if (done) {
-                                // 流结束
                                 typingIndicator.classList.remove('active');
                                 cancelButton.style.display = 'none';
                                 currentAbortController = null;
                                 sendButton.disabled = false;
                                 currentReader = null;
 
-                                // 如果有完整的响应，用Markdown重新渲染
                                 if (currentStreamingMessage && currentFullResponse) {
                                     currentStreamingMessage.classList.add('markdown-content');
                                     currentStreamingMessage.innerHTML = '';
@@ -1205,10 +1400,12 @@
                                 }
 
                                 scrollToBottom();
+                                
+                                // 重新加载对话列表以更新标题
+                                loadConversations();
                                 return;
                             }
 
-                            // 解码并处理数据
                             const chunk = decoder.decode(value, { stream: true });
                             const lines = chunk.split('\n');
 
@@ -1224,12 +1421,10 @@
 
                                             case 'chunk':
                                                 if (!currentStreamingMessage) {
-                                                    // 创建新的消息元素
                                                     currentStreamingMessage = document.createElement('div');
                                                     currentStreamingMessage.classList.add('message', 'bot-message');
                                                     chatContainer.appendChild(currentStreamingMessage);
 
-                                                    // 添加模型信息
                                                     if (currentModelUsed) {
                                                         const modelInfo = document.createElement('div');
                                                         modelInfo.classList.add('model-info');
@@ -1237,13 +1432,11 @@
                                                         currentStreamingMessage.appendChild(modelInfo);
                                                     }
 
-                                                    // 创建内容容器
                                                     const contentElement = document.createElement('div');
                                                     contentElement.id = 'streaming-content';
                                                     currentStreamingMessage.appendChild(contentElement);
                                                 }
 
-                                                // 追加内容
                                                 currentFullResponse += data.chunk;
                                                 document.getElementById('streaming-content').textContent = currentFullResponse;
                                                 scrollToBottom();
@@ -1258,7 +1451,6 @@
                                                 return;
 
                                             case 'end_of_stream':
-                                                // 流正常结束，继续读取直到完成
                                                 break;
                                         }
                                     } catch (e) {
@@ -1267,7 +1459,6 @@
                                 }
                             }
 
-                            // 继续读取
                             return readStream();
                         });
                     }
@@ -1275,23 +1466,17 @@
                     return readStream();
                 })
                 .catch(error => {
-                    // 隐藏"正在输入"指示器和取消按钮
                     typingIndicator.classList.remove('active');
                     cancelButton.style.display = 'none';
                     currentAbortController = null;
                     currentReader = null;
 
-                    // 如果是取消请求，则不显示错误
                     if (error.name === 'AbortError') {
                         return;
                     }
 
-                    // 显示错误消息
                     addMessage('网络错误: ' + error.message, 'error');
-
-                    // 重新启用发送按钮
                     sendButton.disabled = false;
-
                     console.error('Error:', error);
                 });
             }
@@ -1319,7 +1504,6 @@
 
             messageElement.textContent = text;
             
-            // 为用户消息和助手消息添加复制按钮（系统消息和错误消息不添加）
             if (type === 'user' || type === 'bot') {
                 const copyButton = document.createElement('button');
                 copyButton.classList.add('copy-button');
@@ -1348,11 +1532,10 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // 清空聊天界面，只保留欢迎消息
                     chatContainer.innerHTML = '';
                     const welcomeMessage = document.createElement('div');
                     welcomeMessage.classList.add('message', 'bot-message');
-                    welcomeMessage.textContent = '您好！我是法律小助手，请问有什么法律问题需要咨询吗？';
+                    welcomeMessage.textContent = '对话历史已清空，请问有什么法律问题需要咨询吗？';
                     
                     const copyButton = document.createElement('button');
                     copyButton.classList.add('copy-button');
@@ -1369,53 +1552,25 @@
             });
         }
 
-        // 查看对话历史
-        function viewChatHistory() {
-            fetch('/get_history')
-            .then(response => response.json())
-            .then(data => {
-                console.log('对话历史:', data.history);
-                alert(`当前对话历史长度: ${data.history.length} 条消息`);
-            })
-            .catch(error => {
-                console.error('获取历史错误:', error);
-            });
-        }
-
-        // 发送按钮点击事件
+        // 事件监听器
         sendButton.addEventListener('click', sendMessage);
-
-        // 取消按钮点击事件
         cancelButton.addEventListener('click', cancelCurrentRequest);
-
-        // 接受免责声明按钮点击事件
         acceptDisclaimerBtn.addEventListener('click', acceptDisclaimer);
-
-        // RAG开关切换事件
         ragToggle.addEventListener('change', updateRagStatus);
-
-        // 输入框回车事件
+        newChatBtn.addEventListener('click', createNewConversation);
+        
         userInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 sendMessage();
             }
         });
 
-        // 输入框输入事件，启用/禁用发送按钮
         userInput.addEventListener('input', function() {
             sendButton.disabled = !userInput.value.trim();
         });
 
-        // 清空历史按钮
         clearHistoryBtn.addEventListener('click', clearChatHistory);
-
-        // 查看历史按钮
-        viewHistoryBtn.addEventListener('click', viewChatHistory);
-
-        // 模型选择变更
         modelSelect.addEventListener('change', updateModelInfo);
-
-        // 专业模式切换
         professionalMode.addEventListener('change', updateModelInfo);
 
         // 初始化
