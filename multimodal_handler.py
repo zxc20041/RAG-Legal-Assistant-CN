@@ -9,14 +9,14 @@ from datetime import datetime
 
 # ================= 配置区 =================
 # 1. 云雾 API 配置 (用于图片识别，已验证稳定)
-YUNWU_API_KEY = "sk-aLSNaMGPRwnCVChJeqtavqm3HzeZwzJQgVMgXjE6Qm39hFjU"
+YUNWU_API_KEY = "YOUR-YUNWU-API-KEY"
 YUNWU_BASE_URL = "https://yunwu.ai/v1"
 IMAGE_MODEL = "gpt-4o-mini"
 
 # 2. 腾讯云配置 (用于音频识别，解决 429/503 问题)
 # 申请地址：https://console.cloud.tencent.com/cam/capi
-TENCENT_SECRET_ID = "AKIDZ30oQp0ymNn4C9tPq8Dg1GPUN4aw51lL"
-TENCENT_SECRET_KEY = "SmusvlPqHqHUZjrsjRyIPMBqIXbTAeIr"
+TENCENT_SECRET_ID = "YOUR-TENCENT-SECRET-ID"
+TENCENT_SECRET_KEY = "YOUR-TENCENT-SECRET-KEY"
 # ==========================================
 
 def process_multimodal_file(file_path):
