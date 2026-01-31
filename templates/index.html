@@ -15,11 +15,11 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Arial', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
 
         body {
-            background-color: #f5f5f5;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
             line-height: 1.6;
             display: flex;
@@ -28,40 +28,50 @@
 
         /* 侧边栏样式 */
         .sidebar {
-            width: 300px;
-            background-color: #2c3e50;
+            width: 280px;
+            background-color: #1a1a2e;
             color: white;
             display: flex;
             flex-direction: column;
             height: 100vh;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
         }
 
         .sidebar-header {
             padding: 20px;
-            border-bottom: 1px solid #34495e;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
         }
 
         .sidebar-header h2 {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-header h2::before {
+            content: "⚖️";
         }
 
         .new-chat-btn {
             width: 100%;
             padding: 12px;
-            background-color: #3498db;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 1rem;
-            margin-top: 10px;
-            transition: background-color 0.3s;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
 
         .new-chat-btn:hover {
-            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
         .conversations-list {
@@ -70,13 +80,22 @@
             padding: 10px;
         }
 
+        .conversations-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .conversations-list::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+        }
+
         .conversation-item {
             padding: 12px 15px;
-            margin-bottom: 8px;
-            background-color: #34495e;
-            border-radius: 6px;
+            margin-bottom: 6px;
+            background-color: rgba(255,255,255,0.05);
+            border-radius: 8px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.2s ease;
             position: relative;
             display: flex;
             justify-content: space-between;
@@ -84,11 +103,12 @@
         }
 
         .conversation-item:hover {
-            background-color: #3d566e;
+            background-color: rgba(255,255,255,0.1);
         }
 
         .conversation-item.active {
-            background-color: #3498db;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
+            border-left: 3px solid #667eea;
         }
 
         .conversation-title {
@@ -104,23 +124,27 @@
             border: none;
             color: #e74c3c;
             cursor: pointer;
-            padding: 5px;
-            border-radius: 3px;
-            font-size: 0.8rem;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 1rem;
+            opacity: 0;
+            transition: all 0.2s;
+        }
+
+        .conversation-item:hover .conversation-delete {
             opacity: 0.7;
-            transition: opacity 0.3s;
         }
 
         .conversation-delete:hover {
-            opacity: 1;
-            background-color: rgba(231, 76, 60, 0.1);
+            opacity: 1 !important;
+            background-color: rgba(231, 76, 60, 0.2);
         }
 
         .sidebar-footer {
             padding: 15px;
-            border-top: 1px solid #34495e;
-            font-size: 0.8rem;
-            color: #bdc3c7;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.5);
             text-align: center;
         }
 
@@ -129,24 +153,21 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            background-color: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            background-color: #f8fafc;
             height: 100vh;
         }
 
         .header {
-            background-color: #2c3e50;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
             color: white;
-            padding: 15px 20px;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 15px 25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .header h1 {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: 600;
         }
 
@@ -156,58 +177,67 @@
         }
 
         .header-button {
-            background-color: rgba(255,255,255,0.2);
+            background-color: rgba(255,255,255,0.15);
             color: white;
             border: none;
-            border-radius: 4px;
-            padding: 5px 10px;
+            border-radius: 6px;
+            padding: 8px 16px;
             cursor: pointer;
-            font-size: 0.8rem;
-            transition: background-color 0.3s;
+            font-size: 0.85rem;
+            transition: all 0.2s;
         }
 
         .header-button:hover {
-            background-color: rgba(255,255,255,0.3);
+            background-color: rgba(255,255,255,0.25);
         }
 
         .settings-panel {
-            background-color: #f8f9fa;
-            padding: 10px 15px;
-            border-bottom: 1px solid #e9ecef;
+            background-color: white;
+            padding: 12px 20px;
+            border-bottom: 1px solid #e2e8f0;
             display: flex;
-            gap: 15px;
+            gap: 20px;
             align-items: center;
             flex-wrap: wrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .setting-group {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
         }
 
         .setting-group label {
-            font-size: 0.9rem;
-            color: #495057;
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: 500;
         }
 
         .setting-group select, .setting-group input[type="checkbox"] {
-            padding: 4px 8px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
+            padding: 6px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
             background-color: white;
+            cursor: pointer;
+        }
+
+        .setting-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .rag-toggle {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
         }
 
         .rag-toggle .switch {
             position: relative;
             display: inline-block;
-            width: 50px;
+            width: 44px;
             height: 24px;
         }
 
@@ -224,163 +254,608 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
+            background-color: #cbd5e1;
+            transition: .3s;
             border-radius: 24px;
         }
 
         .rag-toggle .slider:before {
             position: absolute;
             content: "";
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
             background-color: white;
-            transition: .4s;
+            transition: .3s;
             border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
 
         .rag-toggle input:checked + .slider {
-            background-color: #2196F3;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
         .rag-toggle input:checked + .slider:before {
-            transform: translateX(26px);
+            transform: translateX(20px);
+        }
+
+        #rag-status {
+            font-size: 0.8rem;
+            font-weight: 500;
         }
 
         .chat-container {
             flex: 1;
-            padding: 20px;
+            padding: 20px 25px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+
+        .chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
         }
 
         .message {
-            margin-bottom: 15px;
-            padding: 12px 15px;
-            border-radius: 18px;
-            max-width: 80%;
+            margin-bottom: 16px;
+            padding: 14px 18px;
+            border-radius: 16px;
+            max-width: 75%;
             word-wrap: break-word;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             position: relative;
             white-space: pre-wrap;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .user-message {
-            background-color: #e3f2fd;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             align-self: flex-end;
-            border-bottom-right-radius: 5px;
+            border-bottom-right-radius: 4px;
         }
 
         .bot-message {
-            background-color: #f1f1f1;
+            background-color: white;
             align-self: flex-start;
-            border-bottom-left-radius: 5px;
+            border-bottom-left-radius: 4px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Markdown内容样式 - 修复空行过多问题 */
+        .markdown-content {
+            white-space: normal;
+        }
+
+        .markdown-content p {
+            margin: 0.5em 0;
+        }
+
+        .markdown-content h1, .markdown-content h2, .markdown-content h3,
+        .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+            margin: 0.8em 0 0.4em 0;
+            line-height: 1.3;
+        }
+
+        .markdown-content ul, .markdown-content ol {
+            margin: 0.4em 0;
+            padding-left: 1.5em;
+        }
+
+        .markdown-content li {
+            margin: 0.2em 0;
+        }
+
+        .markdown-content hr {
+            margin: 0.8em 0;
+            border: none;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .markdown-content pre {
+            margin: 0.5em 0;
+            padding: 0.8em;
+            background-color: #f8fafc;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        .markdown-content code {
+            background-color: #f1f5f9;
+            padding: 0.1em 0.3em;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        .markdown-content pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .markdown-content blockquote {
+            margin: 0.5em 0;
+            padding: 0.5em 1em;
+            border-left: 3px solid #667eea;
+            background-color: #f8fafc;
+        }
+
+        .markdown-content table {
+            margin: 0.5em 0;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .markdown-content th, .markdown-content td {
+            border: 1px solid #e2e8f0;
+            padding: 0.4em 0.8em;
+            text-align: left;
+        }
+
+        .markdown-content th {
+            background-color: #f8fafc;
         }
 
         .system-message {
-            background-color: #fff3cd;
+            background-color: #fef3c7;
             align-self: center;
             border-radius: 8px;
             max-width: 90%;
             text-align: center;
             font-style: italic;
-            color: #856404;
+            color: #92400e;
+            font-size: 0.9rem;
+            padding: 10px 20px;
+        }
+
+        /* RAG状态指示器样式 */
+        .rag-status-indicator {
+            background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+            border: 1px solid #7dd3fc;
+            border-radius: 8px;
+            padding: 10px 16px;
+            margin-bottom: 12px;
+            align-self: center;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: #0369a1;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .rag-status-indicator .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #7dd3fc;
+            border-top-color: #0369a1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .rag-found-indicator {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border: 1px solid #34d399;
+            border-radius: 8px;
+            padding: 10px 16px;
+            margin-bottom: 12px;
+            align-self: center;
+            font-size: 0.85rem;
+            color: #065f46;
         }
 
         .input-container {
             display: flex;
-            padding: 15px;
-            border-top: 1px solid #eee;
+            padding: 16px 20px;
+            border-top: 1px solid #e2e8f0;
             background-color: white;
-            position: relative;
+            gap: 12px;
         }
 
         .input-container input {
             flex: 1;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 24px;
+            padding: 14px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 25px;
             outline: none;
-            font-size: 1rem;
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .input-container input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .input-container button {
-            background-color: #2c3e50;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 24px;
-            padding: 12px 20px;
-            margin-left: 10px;
+            border-radius: 25px;
+            padding: 14px 28px;
             cursor: pointer;
             font-weight: 600;
-            transition: background-color 0.3s;
+            font-size: 0.95rem;
+            transition: all 0.2s;
         }
 
-        .input-container button:hover {
-            background-color: #1a252f;
+        .input-container button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
         .input-container button:disabled {
-            background-color: #95a5a6;
+            background: #94a3b8;
             cursor: not-allowed;
         }
 
-        .cancel-button {
-            background-color: #e74c3c !important;
+        /* 拖拽上传样式 */
+        .drag-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(102, 126, 234, 0.15);
+            backdrop-filter: blur(2px);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .drag-overlay.active {
+            display: flex;
+        }
+
+        .drag-hint {
+            background: white;
+            padding: 40px 60px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            border: 3px dashed #667eea;
+        }
+
+        .drag-hint .icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .drag-hint .title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .drag-hint .subtitle {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        /* 文件上传区域样式 */
+        .input-wrapper {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            gap: 8px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 2px solid #e2e8f0;
+            border-radius: 25px;
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+            color: #64748b;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .upload-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+            background: white;
+        }
+
+        .upload-btn .icon {
+            font-size: 1.1rem;
+        }
+
+        .upload-input {
             display: none;
         }
 
-        .cancel-button:hover {
-            background-color: #c0392b !important;
+        /* 已上传文件列表 */
+        .file-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            max-width: 280px;
+        }
+
+        .file-item .file-icon {
+            font-size: 1.2rem;
+        }
+
+        .file-item .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-item .file-name {
+            font-weight: 500;
+            color: #334155;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-item .file-status {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .file-item .file-status.success {
+            color: #059669;
+        }
+
+        .file-item .file-status.error {
+            color: #dc2626;
+        }
+
+        .file-item .file-status.loading {
+            color: #2563eb;
+        }
+
+        .file-item .file-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .file-item .file-actions button {
+            background: none;
+            border: none;
+            padding: 4px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .file-item .view-btn {
+            color: #2563eb;
+        }
+
+        .file-item .view-btn:hover {
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        .file-item .remove-btn {
+            color: #dc2626;
+        }
+
+        .file-item .remove-btn:hover {
+            background: rgba(220, 38, 38, 0.1);
+        }
+
+        /* 原文预览弹窗 */
+        .text-preview-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1001;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .text-preview-modal.active {
+            display: flex;
+        }
+
+        .text-preview-content {
+            background-color: white;
+            padding: 24px;
+            border-radius: 16px;
+            max-width: 700px;
+            width: 90%;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .text-preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .text-preview-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .text-preview-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #64748b;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .text-preview-close:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .text-preview-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: #334155;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        /* 消息中的附件标签样式 */
+        .message-attachments {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .attachment-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 0.8rem;
+        }
+
+        .user-message .attachment-tag {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .attachment-view-btn {
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            color: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .attachment-view-btn:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .message-text {
+            margin-top: 4px;
+        }
+
+        .cancel-button {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+            display: none;
+        }
+
+        .cancel-button:hover:not(:disabled) {
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4) !important;
         }
 
         .typing-indicator {
             display: none;
             align-self: flex-start;
-            background-color: #f1f1f1;
-            padding: 12px 15px;
-            border-radius: 18px;
-            margin-bottom: 15px;
-            border-bottom-left-radius: 5px;
-            color: #666;
+            background-color: white;
+            padding: 14px 18px;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            border-bottom-left-radius: 4px;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
         }
 
         .typing-indicator.active {
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .typing-dots {
-            display: inline-block;
+            display: flex;
+            gap: 4px;
         }
 
         .typing-dots span {
-            animation: typing 1.4s infinite;
-            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #667eea;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out;
         }
 
-        .typing-dots span:nth-child(2) {
-            animation-delay: 0.2s;
-        }
+        .typing-dots span:nth-child(1) { animation-delay: 0s; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
 
-        .typing-dots span:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-
-        @keyframes typing {
-            0%, 60%, 100% {
-                transform: translateY(0);
-            }
-            30% {
-                transform: translateY(-5px);
-            }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
         }
 
         .error-message {
-            background-color: #f8d7da;
-            color: #721c24;
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
             align-self: center;
             border-radius: 8px;
             max-width: 90%;
@@ -388,35 +863,36 @@
         }
 
         .model-info {
-            font-size: 0.8rem;
-            color: #6c757d;
-            margin-bottom: 5px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 6px;
+            font-weight: 500;
         }
 
         .judge-reasoning {
-            background-color: #e8f4fd;
-            border-left: 4px solid #2196F3;
-            padding: 10px 15px;
-            margin: 10px 0;
-            font-size: 0.9rem;
-            color: #2c3e50;
-            border-radius: 0 4px 4px 0;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-left: 4px solid #3b82f6;
+            padding: 12px 16px;
+            margin: 12px 0;
+            font-size: 0.85rem;
+            color: #1e40af;
+            border-radius: 0 8px 8px 0;
         }
 
         /* 复制按钮样式 */
         .copy-button {
             position: absolute;
-            bottom: 5px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.1);
+            bottom: 8px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.06);
             border: none;
             border-radius: 4px;
-            padding: 3px 8px;
+            padding: 4px 10px;
             font-size: 0.7rem;
-            color: #666;
+            color: #64748b;
             cursor: pointer;
             opacity: 0;
-            transition: opacity 0.3s, background-color 0.3s;
+            transition: all 0.2s;
         }
 
         .message:hover .copy-button {
@@ -424,42 +900,50 @@
         }
 
         .copy-button:hover {
-            background-color: rgba(0, 0, 0, 0.2);
-            color: #333;
+            background-color: rgba(0, 0, 0, 0.1);
         }
 
         .copy-button.copied {
-            background-color: #28a745;
+            background-color: #22c55e;
             color: white;
+        }
+
+        .user-message .copy-button {
+            background: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .user-message .copy-button:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         /* Judge模式选择器样式 */
         .judge-selector {
-            margin: 10px 0;
-            padding: 8px 12px;
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
+            margin: 12px 0;
+            padding: 10px 14px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
             border-radius: 8px;
         }
 
         .model-select-label {
-            font-weight: bold;
-            color: #495057;
+            font-weight: 600;
+            color: #475569;
             margin-right: 10px;
+            font-size: 0.85rem;
         }
 
         .model-select {
-            padding: 5px 10px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
+            padding: 6px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
             background-color: white;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         .model-select:focus {
             outline: none;
-            border-color: #2196F3;
-            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+            border-color: #667eea;
         }
 
         .model-response {
@@ -478,7 +962,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
             z-index: 1000;
             justify-content: center;
             align-items: center;
@@ -490,65 +975,77 @@
 
         .disclaimer-content {
             background-color: white;
-            padding: 30px;
-            border-radius: 10px;
-            max-width: 600px;
+            padding: 32px;
+            border-radius: 16px;
+            max-width: 560px;
             max-height: 80vh;
             overflow-y: auto;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
         .disclaimer-title {
             font-size: 1.5rem;
-            font-weight: bold;
+            font-weight: 700;
             margin-bottom: 20px;
-            color: #2c3e50;
+            color: #1e293b;
             text-align: center;
         }
 
         .disclaimer-text {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             line-height: 1.8;
-            font-size: 1rem;
+            font-size: 0.95rem;
+            color: #475569;
+        }
+
+        .disclaimer-text ul {
+            margin: 12px 0;
+            padding-left: 24px;
+        }
+
+        .disclaimer-text li {
+            margin-bottom: 8px;
         }
 
         .disclaimer-warning {
-            background-color: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 15px;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
             margin: 20px 0;
-            border-radius: 4px;
+            border-radius: 0 8px 8px 0;
         }
 
         .disclaimer-actions {
             display: flex;
             justify-content: center;
-            margin-top: 20px;
+            margin-top: 24px;
         }
 
         .disclaimer-button {
-            background-color: #2c3e50;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 5px;
-            padding: 12px 30px;
+            border-radius: 8px;
+            padding: 14px 40px;
             font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.2s;
         }
 
         .disclaimer-button:hover {
-            background-color: #1a252f;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
         /* 响应式设计 */
         @media (max-width: 768px) {
             .sidebar {
-                width: 250px;
+                width: 240px;
             }
             
-            .main-container {
-                width: calc(100% - 250px);
+            .message {
+                max-width: 85%;
             }
         }
 
@@ -560,16 +1057,34 @@
             .sidebar {
                 width: 100%;
                 height: auto;
-                max-height: 40vh;
+                max-height: 35vh;
             }
             
             .main-container {
                 width: 100%;
             }
+
+            .settings-panel {
+                padding: 10px 15px;
+                gap: 12px;
+            }
+
+            .input-container {
+                padding: 12px 15px;
+            }
         }
     </style>
 </head>
 <body>
+<!-- 拖拽上传提示层 -->
+<div class="drag-overlay" id="drag-overlay">
+    <div class="drag-hint">
+        <div class="icon">📁</div>
+        <div class="title">释放以上传文件</div>
+        <div class="subtitle">支持 jpg, png, mp3, wav, m4a 格式，单文件最大 10MB</div>
+    </div>
+</div>
+
 <!-- 免责声明弹窗 -->
 <div class="disclaimer-modal active" id="disclaimer-modal">
     <div class="disclaimer-content">
@@ -670,9 +1185,38 @@
     </div>
 
     <div class="input-container">
-        <input type="text" id="user-input" placeholder="请输入您的法律问题..." autocomplete="off">
+        <div class="input-wrapper">
+            <!-- 已上传文件列表 -->
+            <div class="file-list" id="file-list"></div>
+            <!-- 输入行 -->
+            <div class="input-row">
+                <label class="upload-btn" for="file-upload" title="上传图片或音频文件">
+                    <span class="icon">📎</span>
+                    <span>附件</span>
+                </label>
+                <input type="file" id="file-upload" class="upload-input"
+                       accept=".jpg,.jpeg,.png,.mp3,.wav,.m4a" multiple>
+                <input type="text" id="user-input" placeholder="请输入您的法律问题..." autocomplete="off">
+            </div>
+        </div>
         <button id="send-button">发送</button>
         <button id="cancel-button" class="cancel-button">取消思考</button>
+    </div>
+</div>
+
+<!-- 原文预览弹窗 -->
+<div class="text-preview-modal" id="text-preview-modal">
+    <div class="text-preview-content">
+        <div class="text-preview-header">
+            <div class="text-preview-title">
+                <span id="preview-file-icon">📄</span>
+                <span id="preview-file-name">文件识别结果</span>
+            </div>
+            <button class="text-preview-close" id="close-preview">&times;</button>
+        </div>
+        <div class="text-preview-body" id="preview-text-content">
+            <!-- 识别文本将显示在这里 -->
+        </div>
     </div>
 </div>
 
@@ -689,9 +1233,15 @@
             }
             return code;
         },
-        breaks: true,
+        breaks: false,  // 关闭单换行转<br>，减少空行
         gfm: true
     });
+
+    // 清理回复中的RAG_QUERY标记
+    function cleanRagQueryFromResponse(text) {
+        // 移除 [RAG_QUERY: xxx] 格式的标记
+        return text.replace(/\[RAG_QUERY:\s*[^\]]+\]/g, '').trim();
+    }
 
     // 复制消息内容函数
     function copyMessageContent(button) {
@@ -701,7 +1251,7 @@
         // 如果是Markdown内容，获取原始文本
         if (messageElement.classList.contains('markdown-content')) {
             // 移除模型信息和裁判理由
-            const contentElement = messageElement.querySelector('div:not(.model-info):not(.judge-reasoning)');
+            const contentElement = messageElement.querySelector('div:not(.model-info):not(.judge-reasoning):not(.judge-selector):not(.judge-content-container)');
             if (contentElement) {
                 textToCopy = contentElement.textContent || contentElement.innerText;
             } else {
@@ -712,11 +1262,21 @@
                 textToCopy = clone.textContent || clone.innerText;
             }
         } else {
-            // 普通消息，直接获取文本内容，排除按钮文本
-            const clone = messageElement.cloneNode(true);
-            const buttons = clone.querySelectorAll('.copy-button');
-            buttons.forEach(btn => btn.remove());
-            textToCopy = clone.textContent || clone.innerText;
+            // 检查是否有附件消息，优先获取 .message-text 的内容
+            const messageText = messageElement.querySelector('.message-text');
+            if (messageText) {
+                textToCopy = messageText.textContent || messageText.innerText;
+            } else {
+                // 普通消息，获取文本内容，排除附件标签和按钮
+                const clone = messageElement.cloneNode(true);
+                // 移除附件区域
+                const attachments = clone.querySelectorAll('.message-attachments');
+                attachments.forEach(att => att.remove());
+                // 移除复制按钮
+                const buttons = clone.querySelectorAll('.copy-button');
+                buttons.forEach(btn => btn.remove());
+                textToCopy = clone.textContent || clone.innerText;
+            }
         }
         
         // 清理文本（移除多余的空格和换行）
@@ -829,6 +1389,16 @@
         const conversationsList = document.getElementById('conversations-list');
         const currentConversationTitle = document.getElementById('current-conversation-title');
 
+        // 文件上传相关DOM元素
+        const fileUploadInput = document.getElementById('file-upload');
+        const fileList = document.getElementById('file-list');
+        const textPreviewModal = document.getElementById('text-preview-modal');
+        const previewFileIcon = document.getElementById('preview-file-icon');
+        const previewFileName = document.getElementById('preview-file-name');
+        const previewTextContent = document.getElementById('preview-text-content');
+        const closePreviewBtn = document.getElementById('close-preview');
+        const dragOverlay = document.getElementById('drag-overlay');
+
         let currentStreamingMessage = null;
         let currentFullResponse = '';
         let currentModelUsed = '';
@@ -836,6 +1406,281 @@
         let currentAbortController = null;
         let disclaimerAccepted = false;
         let currentConversationId = null;
+        let dragCounter = 0;  // 用于跟踪拖拽进入/离开事件
+
+        // 已上传文件列表 [{file_id, filename, file_type, text, status}]
+        let uploadedFiles = [];
+        const MAX_FILES = 5;
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+        const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'mp3', 'wav', 'm4a'];
+
+        // ============================================================================
+        // 文件上传功能（包括拖拽上传）
+        // ============================================================================
+
+        // 文件选择事件
+        fileUploadInput.addEventListener('change', handleFileSelect);
+
+        // 拖拽上传事件监听
+        document.addEventListener('dragenter', handleDragEnter);
+        document.addEventListener('dragleave', handleDragLeave);
+        document.addEventListener('dragover', handleDragOver);
+        document.addEventListener('drop', handleDrop);
+
+        // 拖拽进入
+        function handleDragEnter(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dragCounter++;
+
+            // 检查是否拖拽的是文件
+            if (e.dataTransfer.types.includes('Files')) {
+                dragOverlay.classList.add('active');
+            }
+        }
+
+        // 拖拽离开
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dragCounter--;
+
+            if (dragCounter === 0) {
+                dragOverlay.classList.remove('active');
+            }
+        }
+
+        // 拖拽悬停
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // 释放文件
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dragCounter = 0;
+            dragOverlay.classList.remove('active');
+
+            // 检查是否已接受免责声明
+            if (!disclaimerAccepted) {
+                alert('请先阅读并接受免责声明');
+                return;
+            }
+
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length > 0) {
+                processDroppedFiles(files);
+            }
+        }
+
+        // 处理拖拽的文件
+        function processDroppedFiles(files) {
+            // 检查文件数量限制
+            if (uploadedFiles.length + files.length > MAX_FILES) {
+                alert(`最多只能上传 ${MAX_FILES} 个文件，当前已有 ${uploadedFiles.length} 个`);
+                return;
+            }
+
+            // 逐个处理文件（复用现有验证逻辑）
+            files.forEach(file => {
+                // 检查文件格式
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (!ALLOWED_EXTENSIONS.includes(ext)) {
+                    alert(`不支持的文件格式: ${file.name}\n仅支持: ${ALLOWED_EXTENSIONS.join(', ')}`);
+                    return;
+                }
+
+                // 检查文件大小
+                if (file.size > MAX_FILE_SIZE) {
+                    alert(`文件过大: ${file.name}\n最大允许 10MB`);
+                    return;
+                }
+
+                // 上传文件
+                uploadFile(file);
+            });
+        }
+
+        // 关闭预览弹窗
+        closePreviewBtn.addEventListener('click', () => {
+            textPreviewModal.classList.remove('active');
+        });
+
+        // 点击弹窗外部关闭
+        textPreviewModal.addEventListener('click', (e) => {
+            if (e.target === textPreviewModal) {
+                textPreviewModal.classList.remove('active');
+            }
+        });
+
+        // 处理文件选择
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+
+            // 检查文件数量限制
+            if (uploadedFiles.length + files.length > MAX_FILES) {
+                alert(`最多只能上传 ${MAX_FILES} 个文件`);
+                fileUploadInput.value = '';
+                return;
+            }
+
+            // 逐个处理文件
+            files.forEach(file => {
+                // 检查文件格式
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (!ALLOWED_EXTENSIONS.includes(ext)) {
+                    alert(`不支持的文件格式: ${file.name}\n仅支持: ${ALLOWED_EXTENSIONS.join(', ')}`);
+                    return;
+                }
+
+                // 检查文件大小
+                if (file.size > MAX_FILE_SIZE) {
+                    alert(`文件过大: ${file.name}\n最大允许 10MB`);
+                    return;
+                }
+
+                // 上传文件
+                uploadFile(file);
+            });
+
+            // 清空input以便重复选择同一文件
+            fileUploadInput.value = '';
+        }
+
+        // 上传单个文件
+        async function uploadFile(file) {
+            const tempId = 'temp_' + Date.now();
+            const fileType = ['jpg', 'jpeg', 'png'].includes(file.name.split('.').pop().toLowerCase()) ? 'image' : 'audio';
+
+            // 先添加到列表显示"识别中"状态
+            const fileItem = {
+                file_id: tempId,
+                filename: file.name,
+                file_type: fileType,
+                text: '',
+                status: 'loading'
+            };
+            uploadedFiles.push(fileItem);
+            renderFileList();
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('/upload_file', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                // 更新文件状态
+                const index = uploadedFiles.findIndex(f => f.file_id === tempId);
+                if (index !== -1) {
+                    if (result.success) {
+                        uploadedFiles[index] = {
+                            file_id: result.file_id,
+                            filename: result.filename,
+                            file_type: result.file_type,
+                            text: result.text,
+                            status: 'success'
+                        };
+                    } else {
+                        uploadedFiles[index].status = 'error';
+                        uploadedFiles[index].text = result.error || '识别失败';
+                    }
+                    renderFileList();
+                }
+            } catch (error) {
+                console.error('文件上传错误:', error);
+                const index = uploadedFiles.findIndex(f => f.file_id === tempId);
+                if (index !== -1) {
+                    uploadedFiles[index].status = 'error';
+                    uploadedFiles[index].text = '网络错误';
+                    renderFileList();
+                }
+            }
+        }
+
+        // 渲染文件列表
+        function renderFileList() {
+            fileList.innerHTML = '';
+
+            uploadedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.classList.add('file-item');
+
+                const icon = file.file_type === 'image' ? '🖼️' : '🎵';
+                let statusText = '';
+                let statusClass = '';
+
+                switch (file.status) {
+                    case 'loading':
+                        statusText = '识别中...';
+                        statusClass = 'loading';
+                        break;
+                    case 'success':
+                        statusText = '已识别';
+                        statusClass = 'success';
+                        break;
+                    case 'error':
+                        statusText = '识别失败';
+                        statusClass = 'error';
+                        break;
+                }
+
+                fileItem.innerHTML = `
+                    <span class="file-icon">${icon}</span>
+                    <div class="file-info">
+                        <div class="file-name" title="${file.filename}">${file.filename}</div>
+                        <div class="file-status ${statusClass}">${statusText}</div>
+                    </div>
+                    <div class="file-actions">
+                        ${file.status === 'success' ? `<button class="view-btn" onclick="showTextPreview(${index})">查看</button>` : ''}
+                        <button class="remove-btn" onclick="removeFile(${index})">删除</button>
+                    </div>
+                `;
+
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        // 显示原文预览（全局函数）
+        window.showTextPreview = function(index) {
+            const file = uploadedFiles[index];
+            if (!file) return;
+
+            previewFileIcon.textContent = file.file_type === 'image' ? '🖼️' : '🎵';
+            previewFileName.textContent = file.filename;
+            previewTextContent.textContent = file.text || '无内容';
+            textPreviewModal.classList.add('active');
+        };
+
+        // 删除文件（全局函数）
+        window.removeFile = function(index) {
+            uploadedFiles.splice(index, 1);
+            renderFileList();
+        };
+
+        // 获取附件数据用于发送
+        function getAttachmentsForSend() {
+            return uploadedFiles
+                .filter(f => f.status === 'success')
+                .map(f => ({
+                    file_id: f.file_id,
+                    filename: f.filename,
+                    file_type: f.file_type,
+                    text: f.text
+                }));
+        }
+
+        // 清空文件列表
+        function clearUploadedFiles() {
+            uploadedFiles = [];
+            renderFileList();
+        }
 
         // 显示Judge模式消息的函数
         function displayJudgeMessage(data) {
@@ -885,20 +1730,20 @@
             const contentContainer = document.createElement('div');
             contentContainer.classList.add('judge-content-container');
 
-            // 最佳回答内容
+            // 最佳回答内容（清理RAG_QUERY标记）
             const bestResponse = document.createElement('div');
             bestResponse.classList.add('model-response', 'active');
             bestResponse.id = 'response-best';
-            bestResponse.innerHTML = marked.parse(data.response);
+            bestResponse.innerHTML = marked.parse(cleanRagQueryFromResponse(data.response));
             contentContainer.appendChild(bestResponse);
 
-            // 各模型原始回答
+            // 各模型原始回答（清理RAG_QUERY标记）
             if (data.all_answers) {
                 Object.keys(data.all_answers).forEach(model => {
                     const modelResponse = document.createElement('div');
                     modelResponse.classList.add('model-response');
                     modelResponse.id = `response-${model}`;
-                    modelResponse.innerHTML = marked.parse(data.all_answers[model]);
+                    modelResponse.innerHTML = marked.parse(cleanRagQueryFromResponse(data.all_answers[model]));
                     contentContainer.appendChild(modelResponse);
                 });
             }
@@ -959,18 +1804,221 @@
             scrollToBottom();
         }
 
+        // 从历史记录显示Judge模式消息的函数
+        function displayJudgeMessageFromHistory(judgeData) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', 'bot-message', 'markdown-content');
+
+            // 添加模型信息
+            if (judgeData.model_used) {
+                const modelInfo = document.createElement('div');
+                modelInfo.classList.add('model-info');
+                modelInfo.textContent = `来自 ${judgeData.model_used}`;
+                messageElement.appendChild(modelInfo);
+            }
+
+            // 创建模型选择器
+            const selectorContainer = document.createElement('div');
+            selectorContainer.classList.add('judge-selector');
+
+            const selectorLabel = document.createElement('span');
+            selectorLabel.classList.add('model-select-label');
+            selectorLabel.textContent = '选择查看模型回答:';
+            selectorContainer.appendChild(selectorLabel);
+
+            const modelSelect = document.createElement('select');
+            modelSelect.classList.add('model-select');
+            selectorContainer.appendChild(modelSelect);
+
+            // 添加最佳回答选项
+            const bestOption = document.createElement('option');
+            bestOption.value = 'best';
+            bestOption.textContent = '最佳回答 (由Judge选择)';
+            modelSelect.appendChild(bestOption);
+
+            // 添加所有参赛模型的选项
+            if (judgeData.all_answers) {
+                Object.keys(judgeData.all_answers).forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = `模型: ${model}`;
+                    modelSelect.appendChild(option);
+                });
+            }
+
+            messageElement.appendChild(selectorContainer);
+
+            // 创建内容容器
+            const contentContainer = document.createElement('div');
+            contentContainer.classList.add('judge-content-container');
+
+            // 最佳回答内容（清理RAG_QUERY标记）
+            const bestResponse = document.createElement('div');
+            bestResponse.classList.add('model-response', 'active');
+            bestResponse.id = `response-best-${Date.now()}`;  // 添加唯一ID避免冲突
+            bestResponse.innerHTML = marked.parse(cleanRagQueryFromResponse(judgeData.best_answer || ''));
+            contentContainer.appendChild(bestResponse);
+
+            // 各模型原始回答（清理RAG_QUERY标记）
+            if (judgeData.all_answers) {
+                Object.keys(judgeData.all_answers).forEach(model => {
+                    const modelResponse = document.createElement('div');
+                    modelResponse.classList.add('model-response');
+                    modelResponse.id = `response-${model}-${Date.now()}`;
+                    modelResponse.innerHTML = marked.parse(cleanRagQueryFromResponse(judgeData.all_answers[model]));
+                    contentContainer.appendChild(modelResponse);
+                });
+            }
+
+            messageElement.appendChild(contentContainer);
+
+            // 添加裁判理由
+            if (judgeData.judge_reasoning) {
+                const reasoningElement = document.createElement('div');
+                reasoningElement.classList.add('judge-reasoning');
+
+                const reasoningTitle = document.createElement('strong');
+                reasoningTitle.textContent = '裁判理由: ';
+                reasoningElement.appendChild(reasoningTitle);
+
+                const reasoningText = document.createElement('span');
+                reasoningText.textContent = judgeData.judge_reasoning;
+                reasoningElement.appendChild(reasoningText);
+
+                messageElement.appendChild(reasoningElement);
+            }
+
+            // 添加复制按钮
+            const copyButton = document.createElement('button');
+            copyButton.classList.add('copy-button');
+            copyButton.textContent = '复制';
+            copyButton.onclick = function() {
+                const activeResponse = contentContainer.querySelector('.model-response.active');
+                if (activeResponse) {
+                    copyJudgeMessageContent(this, activeResponse);
+                }
+            };
+            messageElement.appendChild(copyButton);
+
+            // 添加选择器事件监听
+            modelSelect.addEventListener('change', function() {
+                const selectedModel = this.value;
+
+                // 隐藏所有响应
+                const allResponses = contentContainer.querySelectorAll('.model-response');
+                allResponses.forEach(response => {
+                    response.classList.remove('active');
+                });
+
+                // 显示选中的响应
+                if (selectedModel === 'best') {
+                    bestResponse.classList.add('active');
+                } else {
+                    const selectedResponse = Array.from(allResponses).find(r => r.id.startsWith(`response-${selectedModel}`));
+                    if (selectedResponse) {
+                        selectedResponse.classList.add('active');
+                    }
+                }
+            });
+
+            chatContainer.appendChild(messageElement);
+        }
+
         // 加载对话列表
-        function loadConversations() {
+        function loadConversations(loadCurrentHistory = false) {
             fetch('/conversations')
                 .then(response => response.json())
                 .then(data => {
                     if (data.conversations) {
                         renderConversations(data.conversations);
+
+                        // 如果需要加载当前对话历史
+                        if (loadCurrentHistory) {
+                            const currentConv = data.conversations.find(c => c.is_current);
+                            if (currentConv) {
+                                loadCurrentConversationHistory(currentConv.id);
+                            }
+                        }
                     }
                 })
                 .catch(error => {
                     console.error('加载对话列表失败:', error);
                 });
+        }
+
+        // 加载当前对话的历史内容
+        function loadCurrentConversationHistory(conversationId) {
+            fetch(`/conversations/${conversationId}/switch`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.current_conversation) {
+                    // 清空当前聊天界面
+                    chatContainer.innerHTML = '';
+
+                    if (data.current_conversation.history && data.current_conversation.history.length > 0) {
+                        // 加载对话历史
+                        data.current_conversation.history.forEach(msg => {
+                            if (msg.role === 'user') {
+                                // 检查是否有附件
+                                if (msg.attachments && msg.attachments.length > 0) {
+                                    addMessageWithAttachments(msg.content, 'user', msg.attachments);
+                                } else {
+                                    addMessage(msg.content, 'user');
+                                }
+                            } else if (msg.role === 'assistant') {
+                                // 检查是否是Judge模式的回答
+                                if (msg.is_judge_mode && msg.judge_data) {
+                                    // 使用Judge模式的完整数据显示
+                                    displayJudgeMessageFromHistory(msg.judge_data);
+                                } else {
+                                    // 普通消息：清理RAG_QUERY标记后显示
+                                    const cleanedContent = cleanRagQueryFromResponse(msg.content);
+                                    const messageElement = document.createElement('div');
+                                    messageElement.classList.add('message', 'bot-message', 'markdown-content');
+                                    messageElement.innerHTML = marked.parse(cleanedContent);
+
+                                    const copyButton = document.createElement('button');
+                                    copyButton.classList.add('copy-button');
+                                    copyButton.textContent = '复制';
+                                    copyButton.onclick = function() { copyMessageContent(this); };
+                                    messageElement.appendChild(copyButton);
+
+                                    chatContainer.appendChild(messageElement);
+                                }
+                            }
+                        });
+                        scrollToBottom();
+                    } else {
+                        // 显示欢迎消息
+                        showWelcomeMessage();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('加载对话历史失败:', error);
+                showWelcomeMessage();
+            });
+        }
+
+        // 显示欢迎消息
+        function showWelcomeMessage() {
+            chatContainer.innerHTML = '';
+            const welcomeMessage = document.createElement('div');
+            welcomeMessage.classList.add('message', 'bot-message');
+            welcomeMessage.textContent = '您好！我是法律小助手，请问有什么法律问题需要咨询吗？';
+
+            const copyButton = document.createElement('button');
+            copyButton.classList.add('copy-button');
+            copyButton.textContent = '复制';
+            copyButton.onclick = function() { copyMessageContent(this); };
+            welcomeMessage.appendChild(copyButton);
+
+            chatContainer.appendChild(welcomeMessage);
         }
 
         // 渲染对话列表
@@ -1020,9 +2068,14 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // 重新加载对话列表
-                    loadConversations();
-                    
+                    // 只更新对话列表的高亮状态，不重新排序
+                    updateConversationHighlight(conversationId);
+
+                    // 更新当前对话标题
+                    if (data.current_conversation) {
+                        currentConversationTitle.textContent = data.current_conversation.title;
+                    }
+
                     // 清空当前聊天界面并加载新对话的历史
                     chatContainer.innerHTML = '';
                     
@@ -1030,21 +2083,32 @@
                         // 加载对话历史
                         data.current_conversation.history.forEach(msg => {
                             if (msg.role === 'user') {
-                                addMessage(msg.content, 'user');
+                                // 检查是否有附件
+                                if (msg.attachments && msg.attachments.length > 0) {
+                                    addMessageWithAttachments(msg.content, 'user', msg.attachments);
+                                } else {
+                                    addMessage(msg.content, 'user');
+                                }
                             } else if (msg.role === 'assistant') {
-                                // 这里需要根据消息内容判断是否是Judge模式的消息
-                                // 简化处理：直接显示为普通消息
-                                const messageElement = document.createElement('div');
-                                messageElement.classList.add('message', 'bot-message', 'markdown-content');
-                                messageElement.innerHTML = marked.parse(msg.content);
-                                
-                                const copyButton = document.createElement('button');
-                                copyButton.classList.add('copy-button');
-                                copyButton.textContent = '复制';
-                                copyButton.onclick = function() { copyMessageContent(this); };
-                                messageElement.appendChild(copyButton);
-                                
-                                chatContainer.appendChild(messageElement);
+                                // 检查是否是Judge模式的回答
+                                if (msg.is_judge_mode && msg.judge_data) {
+                                    // 使用Judge模式的完整数据显示
+                                    displayJudgeMessageFromHistory(msg.judge_data);
+                                } else {
+                                    // 普通消息：清理RAG_QUERY标记后显示
+                                    const cleanedContent = cleanRagQueryFromResponse(msg.content);
+                                    const messageElement = document.createElement('div');
+                                    messageElement.classList.add('message', 'bot-message', 'markdown-content');
+                                    messageElement.innerHTML = marked.parse(cleanedContent);
+
+                                    const copyButton = document.createElement('button');
+                                    copyButton.classList.add('copy-button');
+                                    copyButton.textContent = '复制';
+                                    copyButton.onclick = function() { copyMessageContent(this); };
+                                    messageElement.appendChild(copyButton);
+
+                                    chatContainer.appendChild(messageElement);
+                                }
                             }
                         });
                     } else {
@@ -1068,6 +2132,26 @@
             .catch(error => {
                 console.error('切换对话失败:', error);
             });
+        }
+
+        // 只更新对话列表的高亮状态（不重新渲染列表）
+        function updateConversationHighlight(newActiveId) {
+            // 移除所有对话项的高亮
+            const allItems = conversationsList.querySelectorAll('.conversation-item');
+            allItems.forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // 找到新选中的对话项并添加高亮
+            allItems.forEach(item => {
+                const deleteBtn = item.querySelector('.conversation-delete');
+                if (deleteBtn && deleteBtn.dataset.id === newActiveId) {
+                    item.classList.add('active');
+                }
+            });
+
+            // 更新当前对话ID
+            currentConversationId = newActiveId;
         }
 
         // 删除对话
@@ -1150,8 +2234,8 @@
                     disclaimerModal.classList.remove('active');
                     mainContainer.style.display = 'flex';
                     
-                    // 加载对话列表
-                    loadConversations();
+                    // 加载对话列表并加载当前对话历史
+                    loadConversations(true);
                 }
             })
             .catch(error => {
@@ -1160,8 +2244,8 @@
                 disclaimerModal.classList.remove('active');
                 mainContainer.style.display = 'flex';
                 
-                // 加载对话列表
-                loadConversations();
+                // 加载对话列表并加载当前对话历史
+                loadConversations(true);
             });
         }
 
@@ -1190,7 +2274,7 @@
         function updateRagStatus() {
             const isEnabled = ragToggle.checked;
             ragStatus.textContent = isEnabled ? '开启' : '关闭';
-            ragStatus.style.color = isEnabled ? '#28a745' : '#dc3545';
+            ragStatus.style.color = isEnabled ? '#22c55e' : '#ef4444';
             updateModelInfo();
 
             fetch('/toggle_rag', {
@@ -1200,6 +2284,41 @@
                 },
                 body: JSON.stringify({rag_enabled: isEnabled})
             });
+        }
+
+        // 显示RAG查询状态指示器
+        function showRagStatus(message) {
+            removeRagIndicators();
+            const indicator = document.createElement('div');
+            indicator.classList.add('rag-status-indicator');
+            indicator.innerHTML = `<div class="spinner"></div><span>${message}</span>`;
+            indicator.id = 'rag-indicator';
+            chatContainer.appendChild(indicator);
+            scrollToBottom();
+        }
+
+        // 显示RAG查询结果提示
+        function showRagFound(message) {
+            removeRagIndicators();
+            const indicator = document.createElement('div');
+            indicator.classList.add('rag-found-indicator');
+            indicator.textContent = message;
+            indicator.id = 'rag-indicator';
+            chatContainer.appendChild(indicator);
+            scrollToBottom();
+
+            // 3秒后自动移除
+            setTimeout(() => {
+                removeRagIndicators();
+            }, 3000);
+        }
+
+        // 移除RAG指示器
+        function removeRagIndicators() {
+            const existing = document.getElementById('rag-indicator');
+            if (existing) {
+                existing.remove();
+            }
         }
 
         // 取消当前请求
@@ -1228,9 +2347,28 @@
             }
 
             const message = userInput.value.trim();
-            if (!message) return;
+            const attachments = getAttachmentsForSend();
 
-            addMessage(message, 'user');
+            // 检查是否有消息或附件
+            if (!message && attachments.length === 0) {
+                return;
+            }
+
+            // 检查是否有正在识别的文件
+            if (uploadedFiles.some(f => f.status === 'loading')) {
+                alert('请等待文件识别完成');
+                return;
+            }
+
+            // 显示用户消息（如果有附件则使用带附件的显示函数）
+            if (attachments.length > 0) {
+                // 构建完整消息内容（与后端保存格式一致）
+                const fullMessage = message || '请分析以上附件内容。';
+                addMessageWithAttachments(fullMessage, 'user', attachments);
+            } else {
+                addMessage(message, 'user');
+            }
+
             userInput.value = '';
             sendButton.disabled = true;
             typingIndicator.classList.add('active');
@@ -1254,18 +2392,22 @@
                 body: JSON.stringify({model: selectedModel})
             });
 
+            // 构建请求数据（包含附件）
+            const requestData = {
+                message: message,
+                model: selectedModel,
+                is_professional_mode: isProfessionalMode,
+                rag_enabled: isRagEnabled,
+                attachments: attachments
+            };
+
             if (selectedModel === 'judge') {
                 fetch('/send_message', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        message: message,
-                        model: selectedModel,
-                        is_professional_mode: isProfessionalMode,
-                        rag_enabled: isRagEnabled
-                    }),
+                    body: JSON.stringify(requestData),
                     signal: currentAbortController.signal
                 })
                 .then(response => {
@@ -1278,6 +2420,9 @@
                     typingIndicator.classList.remove('active');
                     cancelButton.style.display = 'none';
                     currentAbortController = null;
+
+                    // 发送成功后清空附件列表
+                    clearUploadedFiles();
 
                     if (data.response) {
                         if (data.should_exit) {
@@ -1298,8 +2443,10 @@
                                     messageElement.appendChild(modelInfo);
                                 }
 
+                                // 清理RAG_QUERY标记后再显示
+                                const cleanedResponse = cleanRagQueryFromResponse(data.response);
                                 const contentElement = document.createElement('div');
-                                contentElement.innerHTML = marked.parse(data.response);
+                                contentElement.innerHTML = marked.parse(cleanedResponse);
                                 messageElement.appendChild(contentElement);
 
                                 if (data.judge_reasoning) {
@@ -1347,18 +2494,16 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        message: message,
-                        model: selectedModel,
-                        is_professional_mode: isProfessionalMode,
-                        rag_enabled: isRagEnabled
-                    }),
+                    body: JSON.stringify(requestData),
                     signal: currentAbortController.signal
                 })
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
+
+                    // 发送成功后清空附件列表
+                    clearUploadedFiles();
 
                     currentReader = response.body.getReader();
                     const decoder = new TextDecoder();
@@ -1377,6 +2522,9 @@
                                 currentReader = null;
 
                                 if (currentStreamingMessage && currentFullResponse) {
+                                    // 清理RAG_QUERY标记后再显示
+                                    const cleanedResponse = cleanRagQueryFromResponse(currentFullResponse);
+
                                     currentStreamingMessage.classList.add('markdown-content');
                                     currentStreamingMessage.innerHTML = '';
 
@@ -1388,7 +2536,7 @@
                                     }
 
                                     const contentElement = document.createElement('div');
-                                    contentElement.innerHTML = marked.parse(currentFullResponse);
+                                    contentElement.innerHTML = marked.parse(cleanedResponse);
                                     currentStreamingMessage.appendChild(contentElement);
 
                                     // 添加复制按钮
@@ -1419,7 +2567,20 @@
                                                 currentModelUsed = data.model_used;
                                                 break;
 
+                                            case 'rag_query_detected':
+                                                // 显示RAG查询状态
+                                                showRagStatus(`🔍 正在搜索相关案例: ${data.query}`);
+                                                break;
+
+                                            case 'rag_results_found':
+                                                // 显示找到案例的提示
+                                                showRagFound(`✅ 找到 ${data.count} 个相关案例，已加入分析`);
+                                                break;
+
                                             case 'chunk':
+                                                // 移除RAG状态指示器
+                                                removeRagIndicators();
+
                                                 if (!currentStreamingMessage) {
                                                     currentStreamingMessage = document.createElement('div');
                                                     currentStreamingMessage.classList.add('message', 'bot-message');
@@ -1515,6 +2676,70 @@
             chatContainer.appendChild(messageElement);
             scrollToBottom();
         }
+
+        // 添加带附件的消息到聊天界面
+        function addMessageWithAttachments(text, type, attachments) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+
+            if (type === 'user') {
+                messageElement.classList.add('user-message');
+            }
+
+            // 创建附件标签区域
+            if (attachments && attachments.length > 0) {
+                const attachmentsContainer = document.createElement('div');
+                attachmentsContainer.classList.add('message-attachments');
+
+                attachments.forEach((att, index) => {
+                    const attachmentTag = document.createElement('span');
+                    attachmentTag.classList.add('attachment-tag');
+                    const icon = att.file_type === 'image' ? '🖼️' : '🎵';
+                    attachmentTag.innerHTML = `${icon} ${att.filename} <button class="attachment-view-btn" onclick="showAttachmentText(${index}, '${encodeURIComponent(JSON.stringify(attachments))}')">查看</button>`;
+                    attachmentsContainer.appendChild(attachmentTag);
+                });
+
+                messageElement.appendChild(attachmentsContainer);
+            }
+
+            // 提取并显示用户提问部分（去除附件内容前缀）
+            let displayText = text;
+            if (text.includes('【用户提问】')) {
+                displayText = text.split('【用户提问】')[1]?.trim() || text;
+            }
+
+            if (displayText) {
+                const textContent = document.createElement('div');
+                textContent.classList.add('message-text');
+                textContent.textContent = displayText;
+                messageElement.appendChild(textContent);
+            }
+
+            const copyButton = document.createElement('button');
+            copyButton.classList.add('copy-button');
+            copyButton.textContent = '复制';
+            copyButton.onclick = function() { copyMessageContent(this); };
+            messageElement.appendChild(copyButton);
+
+            chatContainer.appendChild(messageElement);
+            scrollToBottom();
+        }
+
+        // 显示附件识别文本（全局函数，用于历史记录中的附件）
+        window.showAttachmentText = function(index, encodedAttachments) {
+            try {
+                const attachments = JSON.parse(decodeURIComponent(encodedAttachments));
+                const att = attachments[index];
+                if (!att) return;
+
+                previewFileIcon.textContent = att.file_type === 'image' ? '🖼️' : '🎵';
+                previewFileName.textContent = att.filename;
+                previewTextContent.textContent = att.text || '无内容';
+                textPreviewModal.classList.add('active');
+            } catch (e) {
+                console.error('解析附件数据错误:', e);
+            }
+        };
 
         // 滚动到最新消息
         function scrollToBottom() {
