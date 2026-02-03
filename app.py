@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 import requests
 import json
 import re
-import faiss
+from pymilvus import MilvusClient
 from sentence_transformers import SentenceTransformer
 import torch
 import os
@@ -94,6 +94,9 @@ API_URL = "http://127.0.0.1:5000/predict"
 # 全局变量，用于存储检索系统组件
 retrieval_system = None
 
+# RAG 调试开关（环境变量 RAG_DEBUG=1/true/on）
+# RAG_DEBUG = os.environ.get('RAG_DEBUG', '0').strip().lower() in {'1', 'true', 'yes', 'on'}
+RAG_DEBUG = True
 
 # ============================================================================
 # 数据库操作函数 - 替代原有的内存字典存储
@@ -337,106 +340,88 @@ def parse_rag_query(response_text):
     return response_text, None
 
 class LegalCaseRetriever:
-    """法律案件检索器"""
+    """法律案件检索器（Milvus 版）"""
     model_loaded = False
-    def __init__(self, database_path, index_path, model_path, caseid_mapping_path):
-        """初始化检索系统"""
-
+    def __init__(self, db_uri, model_path, collection_name="legal_cases"):
         print("正在加载案件检索系统...")
-        # 加载案件数据库
-        with open(database_path, 'r', encoding='utf-8') as f:
-            database = json.load(f)
-        self.case_database = database['legal_case_info']
-        print(f"✓ 案件数据库已加载: {len(self.case_database)} 个案件")
+        self.collection_name = collection_name
 
-        # 加载FAISS索引
-        self.index = faiss.read_index(index_path)
-        print(f"✓ FAISS索引已加载: {self.index.ntotal} 个向量")
+        # 连接本地 Milvus SQLite（由 build_database.ipynb 生成的 legal_assistant.db）
+        self.client = MilvusClient(db_uri)
+        if not self.client.has_collection(self.collection_name):
+            raise ValueError(f"Milvus 集合不存在: {self.collection_name}")
 
-        # 加载case_id到索引的映射
-        with open(caseid_mapping_path, 'r', encoding='utf-8') as f:
-            self.caseid_to_index = json.load(f)
-        print(f"✓ 案件ID映射已加载: {len(self.caseid_to_index)} 个映射")
-
-        # 创建索引到case_id的反向映射
-        self.index_to_caseid = {v: k for k, v in self.caseid_to_index.items()}
+        # 获取数据量，用于状态上报
+        stats = self.client.get_collection_stats(self.collection_name)
+        self.case_count = int(stats.get("row_count", 0))
+        print(f"✓ Milvus 已连接，集合包含 {self.case_count} 条记录")
 
         # 加载嵌入模型
         self.model = SentenceTransformer(model_path, trust_remote_code=True)
-        # 加载到GPU（如果可用）
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.model.to(device)
         print(f"✓ 嵌入模型已加载到: {device}")
-
         print("案件检索系统初始化完成！")
 
     def search_similar_cases(self, query_text, k=5, min_score=0.5):
-        """
-        搜索相似案件
-
-        参数:
-            query_text: 查询文本
-            k: 返回最相似的案件数量
-            min_score: 最小相似度阈值
-
-        返回:
-            List[Dict]: 相似案件列表，包含案件信息和相似度
-        """
-        # 生成查询向量
+        """使用 Milvus 检索相似案件"""
         query_vec = self.model.encode([query_text], normalize_embeddings=True)
 
-        # 搜索最相似的k*2个案件（后续过滤）
-        search_k = min(k * 2, self.index.ntotal)
-        scores, indices = self.index.search(query_vec, search_k)
+        # Milvus 按距离/相似度排序，默认余弦/IP 取决于建库，这里使用 IP 以匹配归一化向量
+        search_res = self.client.search(
+            collection_name=self.collection_name,
+            data=query_vec,
+            limit=k * 2,
+            output_fields=["id", "fact", "summary", "accusation"],
+            search_params={"metric_type": "IP"}
+        )
 
-        # 过滤并格式化结果
         results = []
-        for score, idx in zip(scores[0], indices[0]):
-            if score < min_score:
+        for hit in search_res[0]:
+            similarity = float(hit.get("distance", 0))
+            if similarity < min_score:
                 continue
 
-            # 获取案件ID
-            case_id = self.index_to_caseid.get(idx)
-            if not case_id:
-                continue
-
-            # 获取案件信息
-            case_info = self.case_database.get(str(idx + 1))  # 注意：数据库键是从1开始的字符串
-            if not case_info:
-                continue
-
-            # 转换为与SIMULATED_RAG_DATA相同的格式
+            entity = hit.get("entity", {})
             formatted_case = {
-                "fact": case_info['fact'],
+                "fact": entity.get("fact", ""),
                 "meta": {
-                    "relevant_articles": case_info['articles'],
-                    "accusation": case_info['accusation'],
-                    "punish_of_money": case_info['fine'],
-                    "criminals": case_info['criminals'],
-                    "term_of_imprisonment": case_info['term']
+                    "relevant_articles": entity.get("articles", []),
+                    "accusation": entity.get("accusation", []),
+                    "punish_of_money": entity.get("fine", "未知"),
+                    "criminals": entity.get("criminals", []),
+                    "term_of_imprisonment": entity.get("term", {})
                 }
             }
-
             results.append({
-                'similarity_score': float(score),
+                'similarity_score': similarity,
                 'formatted_case': formatted_case
             })
 
-            # 如果已经收集到足够的案件，提前结束
+            # 调试输出：打印命中的案件关键信息
+            if RAG_DEBUG:
+                fact_preview = formatted_case["fact"][:120] + ("..." if len(formatted_case["fact"]) > 120 else "")
+                print(
+                    f"[RAG] hit id={entity.get('id', 'N/A')} sim={similarity:.4f} "
+                    f"accusation={formatted_case['meta'].get('accusation', [])} "
+                    f"articles={formatted_case['meta'].get('relevant_articles', [])} "
+                    f"fact='{fact_preview}'"
+                )
+
             if len(results) >= k:
                 break
 
         return results
 
+
 def initialize_retrieval_system():
-    """初始化检索系统"""
+    """初始化检索系统（Milvus）"""
     global retrieval_system
     try:
         retrieval_system = LegalCaseRetriever(
-            database_path='./AutoSurvey-main/database/legal_case_db.json',
-            index_path='./AutoSurvey-main/database/case_facts.index',
+            db_uri='./AutoSurvey-main/database/legal_assistant.db',
             model_path='./AutoSurvey-main/model/bge-large-zh-v1.5',
-            caseid_mapping_path='./AutoSurvey-main/database/caseid_to_index.json'
+            collection_name='legal_cases'
         )
         return True
     except Exception as e:
@@ -909,7 +894,8 @@ def retrieval_status():
         return jsonify({
             'status': '已初始化',
             'initialized': True,
-            'case_count': len(retrieval_system.case_database)
+            'case_count': getattr(retrieval_system, 'case_count', 0),
+            'rag_debug': RAG_DEBUG
         })
 
 if __name__ == '__main__':
