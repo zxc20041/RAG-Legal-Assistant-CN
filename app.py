@@ -12,26 +12,27 @@ import uuid
 import tempfile
 from datetime import datetime
 from multimodal_handler import process_multimodal_file
+import config
 
 
 app = Flask(__name__)
-app.secret_key = 'legal_assistant_secret_key233'
+app.secret_key = config.APP_SECRET_KEY
 
 # 文件上传配置
-ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'mp3', 'wav', 'm4a'}
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-MAX_FILES_COUNT = 5
+ALLOWED_EXTENSIONS = config.ALLOWED_EXTENSIONS
+MAX_FILE_SIZE = config.MAX_FILE_SIZE
+MAX_FILES_COUNT = config.MAX_FILES_COUNT
 
 # 配置服务器端会话存储
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_FILE_DIR'] = './flask_session'
-app.config['SESSION_PERMANENT'] = False
-app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_KEY_PREFIX'] = 'legal_assistant:'
+app.config['SESSION_TYPE'] = config.SESSION_TYPE
+app.config['SESSION_FILE_DIR'] = config.SESSION_FILE_DIR
+app.config['SESSION_PERMANENT'] = config.SESSION_PERMANENT
+app.config['SESSION_USE_SIGNER'] = config.SESSION_USE_SIGNER
+app.config['SESSION_KEY_PREFIX'] = config.SESSION_KEY_PREFIX
 
 # 配置SQLite数据库持久化存储
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///conversations.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = config.SQLALCHEMY_TRACK_MODIFICATIONS
 
 # 初始化Flask-Session和SQLAlchemy
 Session(app)
@@ -89,14 +90,13 @@ class Conversation(db.Model):
         }
 
 # 后端API服务的完整地址
-API_URL = "http://127.0.0.1:5000/predict"
+API_URL = config.API_URL
 
 # 全局变量，用于存储检索系统组件
 retrieval_system = None
 
 # RAG 调试开关（环境变量 RAG_DEBUG=1/true/on）
-# RAG_DEBUG = os.environ.get('RAG_DEBUG', '0').strip().lower() in {'1', 'true', 'yes', 'on'}
-RAG_DEBUG = True
+RAG_DEBUG = config.RAG_DEBUG
 
 # ============================================================================
 # 数据库操作函数 - 替代原有的内存字典存储
@@ -367,13 +367,13 @@ class LegalCaseRetriever:
         """使用 Milvus 检索相似案件"""
         query_vec = self.model.encode([query_text], normalize_embeddings=True)
 
-        # Milvus 按距离/相似度排序，默认余弦/IP 取决于建库，这里使用 IP 以匹配归一化向量
+        # Milvus 按距离/相似度排序，需与建库时的 metric_type 一致
         search_res = self.client.search(
             collection_name=self.collection_name,
             data=query_vec,
             limit=k * 2,
             output_fields=["id", "fact", "summary", "accusation"],
-            search_params={"metric_type": "IP"}
+            search_params={"metric_type": "COSINE"}
         )
 
         results = []

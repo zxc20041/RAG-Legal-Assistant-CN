@@ -6,17 +6,16 @@ import hashlib
 import hmac
 import time
 from datetime import datetime
+import config
 
 # ================= 配置区 =================
-# 1. 云雾 API 配置 (用于图片识别，已验证稳定)
-YUNWU_API_KEY = "YOUR-YUNWU-API-KEY"
-YUNWU_BASE_URL = "https://yunwu.ai/v1"
-IMAGE_MODEL = "gpt-4o-mini"
+# 统一从 config.py 读取
+YUNWU_API_KEY = config.YUNWU_API_KEY
+YUNWU_BASE_URL = config.YUNWU_BASE_URL
+IMAGE_MODEL = config.IMAGE_MODEL
 
-# 2. 腾讯云配置 (用于音频识别，解决 429/503 问题)
-# 申请地址：https://console.cloud.tencent.com/cam/capi
-TENCENT_SECRET_ID = "YOUR-TENCENT-SECRET-ID"
-TENCENT_SECRET_KEY = "YOUR-TENCENT-SECRET-KEY"
+TENCENT_SECRET_ID = config.TENCENT_SECRET_ID
+TENCENT_SECRET_KEY = config.TENCENT_SECRET_KEY
 # ==========================================
 
 def process_multimodal_file(file_path):

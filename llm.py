@@ -8,15 +8,15 @@
 3. (新增) 支持 "is_professional_mode" 参数，用于切换不同的系统提示词。
 """
 
-import os
 import openai
 from flask import Flask, request, jsonify, Response, stream_with_context
 import threading
 import json
+import config
 
 # --- 1. 全局配置 ---
-YUNWU_API_KEY = os.getenv("YUNWU_API_KEY", "sk-x4uwyow5nBbDTiJZ61t79saFsgkAQnjaKFSvwQLO4aUotCD9")
-YUNWU_BASE_URL = "https://yunwu.ai/v1"
+YUNWU_API_KEY = config.YUNWU_API_KEY
+YUNWU_BASE_URL = config.YUNWU_BASE_URL
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False

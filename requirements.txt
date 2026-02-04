@@ -14,5 +14,6 @@ Requests==2.32.3
 sentence_transformers==2.7.0
 tiktoken==0.7.0
 tinydb==4.8.0
-faiss-gpu==1.7.2 #conda install -c conda-forge faiss-gpu=1.7.2
+pymilvus[milvus_lite]
+#faiss-gpu==1.7.2 #conda install -c conda-forge faiss-gpu=1.7.2
 
